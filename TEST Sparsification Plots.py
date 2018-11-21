@@ -2,13 +2,13 @@
 from myflowlib import open_flo_file,Sparplot,readPFM
 import matplotlib.pyplot as plt
 
-path= './data/flow_file/SparPlotTest/'
+path= 'C://Users//Administrator//Desktop//新建文件夹//'
 #flow_name = 'a_frame_0001_forward.flo'
 #res_name = 'a_frame_0001_forward_res.flo'
 #gt_name = 'flow_frame_0001.flo'
-flow_name = '0006_forward.flo'
-res_name = '0006_forward_res.flo'
-gt_name = 'OpticalFlowIntoFuture_0006_L.pfm'
+flow_name = '0014_forward.flo'
+res_name = '0014_forward_res.flo'
+gt_name = 'OpticalFlowIntoFuture_0014_L.pfm'
 
 flow_name = path + flow_name
 res_name = path + res_name
@@ -19,7 +19,7 @@ res = open_flo_file(res_name)
 #gt = open_flo_file(gt_name)
 gt = readPFM(gt_name)
 
-Sparplot(flow,res,gt,is_print=True,steps=200)
+Sparplot(flow,res,gt,is_show=True,is_save=True)
 
 #best=gt-flow
 #
