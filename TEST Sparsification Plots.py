@@ -2,7 +2,7 @@
 from myflowlib import open_flo_file,Sparplot,readPFM
 import matplotlib.pyplot as plt
 
-path= 'C://Users//Administrator//Desktop//新建文件夹//'
+path= 'C://Users//Administrator//Desktop//ex1//'
 #flow_name = 'a_frame_0001_forward.flo'
 #res_name = 'a_frame_0001_forward_res.flo'
 #gt_name = 'flow_frame_0001.flo'
