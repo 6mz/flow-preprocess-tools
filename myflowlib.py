@@ -43,6 +43,10 @@ def flow_read_(filename):
 
 
 def readPFM(file):
+    return readPFM_(file)[0][:,:,0:2] 
+    
+
+def readPFM_(file):
     file = open(file, 'rb')
 
     color = None
@@ -96,10 +100,11 @@ def EPE_usingmask(input_flow, target_flow , mask):
     return np.linalg.norm(input_flows-target_flows,axis=0).mean()
 
 
-def Sparplot(out_flow,groundtruth_flow,uncertainty_flow,steps=50,is_plot=True,is_print=False):
+def Sparplot(netout_flow,uncertainty_flow,groundtruth_flow,steps=50,\
+             is_plot=True,is_print=False,is_show=False):
     gt=groundtruth_flow
     res=uncertainty_flow
-    flow=out_flow
+    flow=netout_flow
     best=gt - flow
     
     total_steps=steps
@@ -108,8 +113,8 @@ def Sparplot(out_flow,groundtruth_flow,uncertainty_flow,steps=50,is_plot=True,is
     aepe0=EPE(flow,gt)
     print('AEPE:'+str(aepe0))
     
-    totalpixs=int(flow.size/2)
-    remainpixs=np.linspace(totalpixs,0,total_steps,endpoint=False,dtype='int')
+    totalpixels=int(flow.size/2)
+    remainpixels=np.linspace(totalpixels,0,total_steps,endpoint=False,dtype='int')
 
     res=abs_flow(res)
     best=abs_flow(best)
@@ -122,23 +127,25 @@ def Sparplot(out_flow,groundtruth_flow,uncertainty_flow,steps=50,is_plot=True,is
 
     res_aepe=[]
     res_threshold=[]
-    for p in remainpixs:
+    for p in remainpixels:
         threshold_id=res_sort_index[p-1]
         threshold=res_sort[threshold_id]
         aepe=EPE_usingmask(flow,gt,res<threshold)
         res_aepe.append(aepe)
         res_threshold.append(threshold)
+        print('\r已完成'+str(int(len(res_aepe)/steps*50))+'%',end='')
 
     best_aepe=[]
     best_threshold=[]
-    for p in remainpixs:
+    for p in remainpixels:
         threshold_id=best_sort_index[p-1]
         threshold=best_sort[threshold_id]
         aepe=EPE_usingmask(flow,gt,best<threshold)
         best_aepe.append(aepe)
         best_threshold.append(threshold)
+        print('\r已完成'+str(int(len(best_aepe)/steps*50+50))+'%',end='')
 
-    x=(totalpixs-remainpixs)/totalpixs
+    x=(totalpixels-remainpixels)/totalpixels
     y1=res_aepe/aepe0
     y2=best_aepe/aepe0
 
@@ -152,6 +159,15 @@ def Sparplot(out_flow,groundtruth_flow,uncertainty_flow,steps=50,is_plot=True,is
         plt.title('Sparsification Plots') #标题
         plt.show()
 
-#    if(is_print):
-#        for()
-    return (remainpixs,res_aepe,best_aepe,aepe0)
+    if(is_print):
+        print('Removed\tPreAEPE\tOraAEPE')
+        for xi,y1i,y2i in zip(x,y1,y2):
+            print('%.2f'% xi,'\t%.4f'% y1i,'\t%.4f'% y2i)
+ 
+    if(is_show):
+        plt.imshow(res,cmap='gray')
+        plt.show()
+        plt.imshow(best,cmap='gray')
+        plt.show()
+
+    return (remainpixels,res_aepe,best_aepe,aepe0)
