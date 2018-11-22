@@ -198,7 +198,7 @@ def EPE_usingmask(input_flow, target_flow , mask):
 
 
 def Sparplot(netout_flow,uncertainty_flow,groundtruth_flow,steps=50,\
-             is_plot=True,is_print=False,is_show=False,is_save=False,style=None):
+             is_plot=True,is_print=False,is_show=False,is_save=False,style=None,path='./'):
     gt=groundtruth_flow
     res=uncertainty_flow
     flow=netout_flow
@@ -283,8 +283,8 @@ def Sparplot(netout_flow,uncertainty_flow,groundtruth_flow,steps=50,\
                 res=Image.fromarray(viz_flow(uncertainty_flow))
                 best=Image.fromarray(viz_flow(netout_flow-gt))
                 gt=Image.fromarray(viz_flow(gt))
-                imsave('net_res_flow.jpg', res)
-                imsave('best_res_flow.jpg', best)
-                imsave('groundtruth_flow.jpg', gt)
+                imsave(path+'net_res_flow.jpg', res)
+                imsave(path+'best_res_flow.jpg', best)
+                imsave(path+'groundtruth_flow.jpg', gt)
 
     return (remainpixels,res_aepe,best_aepe,aepe0)
