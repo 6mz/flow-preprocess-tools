@@ -199,14 +199,16 @@ def EPE_usingmask(input_flow, target_flow , mask):
 
 def Sparplot(netout_flow,uncertainty_flow,groundtruth_flow,steps=50,\
              is_plot=True,is_print=False,is_show=False,is_save=False,style=None,path='./'):
+
     gt=groundtruth_flow
     res=uncertainty_flow
     flow=netout_flow
-    best=gt - flow
-    
-    total_steps=steps
     assert flow.shape==res.shape==gt.shape
-    
+
+    best=gt - flow
+
+    total_steps=steps
+
     aepe0=EPE(flow,gt)
     print('AEPE:'+str(aepe0))
     
@@ -254,6 +256,9 @@ def Sparplot(netout_flow,uncertainty_flow,groundtruth_flow,steps=50,\
         plt.xlabel('Fraction of Removed Pixels') #X轴标签
         plt.ylabel('Average EPE (Normalized)') #Y轴标签
         plt.title('Sparsification Plots') #标题
+        if(is_save):
+            print('\nsave fig')
+            plt.savefig(path+'Sparsification Plots.png')
         plt.show()
 
     if(is_print):
