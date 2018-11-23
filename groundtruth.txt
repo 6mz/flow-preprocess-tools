@@ -1,5 +1,0 @@
-H:\flow\data\Sintel\training\clean\shaman_2\frame_0046.png
-H:\flow\data\Sintel\training\clean\temple_2\frame_0002.png
-H:\flow\data\Sintel\training\clean\mountain_1\frame_0006.png
-H:\flow\data\Sintel\training\clean\sleeping_2\frame_0009.png
-H:\flow\data\Sintel\training\clean\market_6\frame_0031.png

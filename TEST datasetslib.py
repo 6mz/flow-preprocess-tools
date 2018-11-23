@@ -25,7 +25,7 @@ from datasetslib import MpiSintelClean_list,GenerateRandomlist,Randomlist
 #A = read_gen(A_name)
 
 #  ================   part 2   ==========================
-root_path='H:\\flow\\data\\Sintel\\training'
+root_path='/home/a/public1/flow/data/Sintel/training'
 #list_table=MpiSintelClean_list(root_path)
 #print(id(list_table))
 #r1=GenerateRandomlist(root_path,lister = list_table)

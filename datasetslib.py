@@ -7,6 +7,10 @@ from myflowlib import read_gen,save_list
 
 
 
+#def OutVizWarp(txt_save_path,output_file_save_path,head='t')
+
+
+
 def Randomlist(datasets_path, save_path , num = 10,ltype = 'Sintel',ltype2 = 'clean'):
     res = GenerateRandomlist(datasets_path,item_num = num,ltype = ltype,ltype2 = ltype2)
     print('saving list..')
@@ -18,6 +22,7 @@ def Randomlist(datasets_path, save_path , num = 10,ltype = 'Sintel',ltype2 = 'cl
     save_list(save_gtflow_name,res[2])
     print('output img1.txt,img2.txt,groundtruth.txt in ' + \
           'current folder' if len(save_path)==0 else save_path)
+
 
 def GenerateRandomlist(list_path,item_num = 10,ltype = 'Sintel',ltype2 = 'clean',lister  = None):
     datasets_lister = lister
@@ -45,8 +50,8 @@ def GenerateRandomlist(list_path,item_num = 10,ltype = 'Sintel',ltype2 = 'clean'
         item_id = random.randint(0,len(datasets_lister)-1)
         group = datasets_lister[item_id]
         img1s.append(group[0])
-        img2s.append(group[0])
-        gtflows.append(group[0])
+        img2s.append(group[1])
+        gtflows.append(group[2])
 
     return (img1s,img2s,gtflows)
 
@@ -90,7 +95,8 @@ class MpiSintel_list(object):
 
         self.size = len(self.image_list)
         assert (len(self.image_list) == len(self.flow_list))
-        assert(len(self.image_list)>0)
+        if(len(self.image_list)<=0):
+            print('='*10 + '\nwanning,MpiSintel_lister not find any files ,please check input dataset path!\n')
 
     def __getitem__(self, index):
         index = index % self.size
