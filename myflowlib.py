@@ -4,10 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import re
 from PIL import Image
-from scipy.misc import imsave
+from scipy.misc import imsave,imread
+from os.path import *
+
+
 #%%========================================
-
-
 def open_flo_file(filename):
     with open(filename, 'rb') as f:
         magic = np.fromfile(f, np.float32, count=1)
@@ -47,7 +48,6 @@ def flow_read_(filename):
 
 def readPFM(file):
     return readPFM_(file)[0][:,:,0:2] 
-    
 
 def readPFM_(file):
     file = open(file, 'rb')
@@ -85,6 +85,37 @@ def readPFM_(file):
     data = np.reshape(data, shape)
     data = np.flipud(data)
     return data, scale
+
+
+def read_gen(file_name):
+    # 分离后缀名
+    ext = splitext(file_name)[-1]
+    # 如果是普通文件
+    if ext == '.png' or ext == '.jpeg' or ext == '.ppm' or ext == '.jpg':
+        im = imread(file_name)
+        # 如果三通道以上舍弃其余通道
+        if im.shape[2] > 3:
+            return im[:,:,:3]
+        else:
+            return im
+    # 如果是二进制文件
+    elif ext == '.bin' or ext == '.raw':
+        return np.load(file_name)
+    # 如果是光流文件
+    elif ext == '.flo':
+        return open_flo_file(file_name)
+    elif ext == '.pfm':
+        return readPFM(file_name)
+    return []
+
+
+#%%====================================================================
+def save_list(fname,listname):
+    with open(fname,'w') as f:
+        for line in listname:
+            f.write(str(line)+'\n')
+
+
 #%%====================================================================
 def viz_flow(flow,logscale=True,scaledown=6,output=False):
     return viz_flow_(flow[:,:,0],flow[:,:,1],logscale=logscale,scaledown=scaledown,output=output)
@@ -178,9 +209,9 @@ def makecolorwheel():
     colorwheel[col:col+MR,0] = 1
 
     return colorwheel  
+
+
 #%%============================================================
-
-
 def abs_flow(flow,axis=2):
     return np.linalg.norm(flow,axis=axis)
 
