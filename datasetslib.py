@@ -3,8 +3,13 @@ from os.path import *
 from glob import glob
 import random
 import subprocess
+import numpy as np
+import matplotlib.pyplot as plt
+from PIL import Image
+from scipy.misc import imsave,imread
 
 from myflowlib import read_gen,save_list,read_list
+from myflowlib import Sparplot,EPE,EPE_usingmask,abs_flow,viz_flow
 
 
 
@@ -17,10 +22,14 @@ class EasyTest(object):
         
         self.set_txtpath("./txts")
         self.set_txtname("img1.txt", "img2.txt", "groundtruth.txt", "out.txt", "viz.txt", "warp.txt")
-        self.set_targetdir("./data/test1","flow", "vizflow", "vizwarp")
-        self.set_targetname("t","f.jpg","f_viz.jpg","A_forward.jpg")
+        self.set_txtsparname("spar.txt")
+        self.set_targetdir("./data/test1","flow", "vizflow", "vizwarp" )
+        self.set_targetname("t","f.flo","f_viz.jpg","A_forward.jpg")
         self.set_movedir(self.targetdir,"A","B","gt")
         self.set_movename(self.head,"A","B","gt")
+        self.set_spar(20,"default")
+        self.set_spardir("spar")
+        self.set_sparname("spar")
         self.init_Randomlist()
 
     def init_Randomlist(self):
@@ -48,6 +57,12 @@ class EasyTest(object):
         if(viz):self.vizflowtxtname = viz 
         if(warp):self.warptxtname = warp 
 
+    def set_txtsparname(self,spar=None):
+        spar=endcheck('.txt',spar)
+        if(spar):self.spartxtname = spar
+
+
+
     def set_targetdir(self,targetdir=None,outdir=None,vizdir=None,warpdir=None):
         if(targetdir):self.targetdir = targetdir 
         if(outdir):self.outflowdir = outdir 
@@ -55,7 +70,8 @@ class EasyTest(object):
         if(warpdir):self.warpdir = warpdir 
 
     def set_targetname(self,head=None,outend=None,vizend=None,warpend=None):
-        outend,vizend,warpend = endcheck('.jpg',outend,vizend,warpend)
+        vizend,warpend = endcheck('.jpg',vizend,warpend)
+        outend = endcheck('.flo',outend)
         if(head):self.head = head 
         if(outend):self.outflowend = outend 
         if(vizend):self.vizflowend = vizend 
@@ -73,9 +89,25 @@ class EasyTest(object):
         if(Bend):self.Bend = Bend 
         if(gtend):self.gtend = gtend 
 
+    def set_spar(self,steps=None,style=None):
+        if(steps):self.spar_steps = steps 
+        if(style):self.spar_style = style
+
+    def set_spardir(self,spardir=None):
+        if(spardir):self.spardir = spardir 
+
+    def set_sparname(self,sparend=None):
+        sparend = endcheck('.jpg',sparend)
+        if(sparend):self.sparend = sparend 
+
+
+
+
+
     def Generatelist(self):
         self.GenerateRandomlist()
         self.GenerateOutVizWarplist()
+        self.GenerateSparlist()
 
     def GenerateRandomlist(self):
         print('saving list..')
@@ -104,6 +136,18 @@ class EasyTest(object):
         save_list(self.save_warp_name,warplist)
         print('OUTPUT TXTS: %s,%s,%s IN '%(self.outflowtxtname,self.vizflowtxtname,self.warptxtname) + \
           ('current folder' if len(self.txt_save_path)==0 else self.txt_save_path))
+
+    def GenerateSparlist(self):
+        self.save_spar_name = join(self.txt_save_path,self.spartxtname)
+        idlist = list(map(str,range(self.num)))
+        sparlist = [self.head+x+self.sparend for x in idlist]
+        sparlist = list(map(join,[self.targetdir]*self.num,[self.spardir]*self.num,sparlist))
+        self.sparlist = sparlist
+        save_list(self.save_spar_name,sparlist)
+        print('OUTPUT TXTS: %s IN '%(self.spartxtname) + \
+          ('current folder' if len(self.txt_save_path)==0 else self.txt_save_path))
+
+
 
     def MovePics(self,A=True,B=True,gt=True):
         assert(self.num == len(self.imgA) == len(self.imgB) == len(self.gtflow))
@@ -146,6 +190,91 @@ class EasyTest(object):
                     print('MOVE  ' + item + '  FAIL!')
         print('')
 
+    def GenerateSparplots(self):
+        1
+
+    
+    def SparplotSimple(self,netout_flow,uncertainty_flow,groundtruth_flow):
+        gt=groundtruth_flow
+        res=uncertainty_flow
+        flow=netout_flow
+        assert flow.shape==res.shape==gt.shape
+        best=gt - flow
+        total_steps=self.spar_steps
+
+        aepe0=EPE(flow,gt)
+        print('AEPE:'+str(aepe0))
+
+        totalpixels=int(flow.size/2)
+        remainpixels=np.linspace(totalpixels,0,total_steps,endpoint=False,dtype='int')
+
+        res=abs_flow(res)
+        best=abs_flow(best)
+
+        res_sort=res.flatten()
+        best_sort=best.flatten()
+
+        res_sort_index=np.argsort(res_sort)
+        best_sort_index=np.argsort(best_sort)
+
+        res_aepe=[]
+        res_threshold=[]
+        for p in remainpixels:
+            threshold_id=res_sort_index[p-1]
+            threshold=res_sort[threshold_id]
+            aepe=EPE_usingmask(flow,gt,res<threshold)
+            res_aepe.append(aepe)
+            res_threshold.append(threshold)
+            print( u"\r已完成 "+str(int(len(res_aepe)/total_steps*50))+'%',end = '')
+    
+        best_aepe=[]
+        best_threshold=[]
+        for p in remainpixels:
+            threshold_id=best_sort_index[p-1]
+            threshold=best_sort[threshold_id]
+            aepe=EPE_usingmask(flow,gt,best<threshold)
+            best_aepe.append(aepe)
+            best_threshold.append(threshold)
+            print( u"\r已完成"+str(int(len(best_aepe)/total_steps*50+50))+'%',end = '')
+
+        x=(totalpixels-remainpixels)/totalpixels
+        y1=res_aepe/aepe0
+        y2=best_aepe/aepe0
+
+
+        plt.plot(x, y1, mec='r', mfc='w',label='Pred-Merged')
+        plt.plot(x, y2, ms=10,label='Oracle')
+        plt.legend()  # 让图例生效
+        plt.margins(0)
+        plt.xlabel('Fraction of Removed Pixels') #X轴标签
+        plt.ylabel('Average EPE (Normalized)') #Y轴标签
+        plt.title('Sparsification Plots') #标题
+        print('\nsave fig')
+        plt.savefig(path+'Sparsification Plots.png')
+
+#        if(is_print):
+#            print('Removed\tPreAEPE\tOraAEPE')
+#            for xi,y1i,y2i in zip(x,y1,y2):
+#                print('%.2f'% xi,'\t%.4f'% y1i,'\t%.4f'% y2i)
+        print('save 3 imgs !')
+        if(self.style=='gray'):
+            gt=abs_flow(gt)
+            imsave('net_res_flow.jpg', res)
+            imsave('best_res_flow.jpg', best)
+            imsave('groundtruth_flow.jpg', gt)
+        else:
+            best=Image.fromarray(viz_flow(best))
+            imsave(path+'best_res_flow.jpg', best)
+
+
+        return (remainpixels,res_aepe,best_aepe,aepe0)
+
+
+
+
+
+
+
 
     def print_all(self):
         print ('\nArg For EasyTest:')
@@ -181,7 +310,7 @@ def endcheck(end,*arg):
                 res.append(item+end)
         else:
             res.append(item)
-    return res
+    return res if len(res)>1 else res[0]
 
 #GenerateOutVizWarplist('./data/test1','',5,vizdir='show',warpdir='show')
 def GenerateOutVizWarplist(file_path,save_txt_path,num,outdir='flow',vizdir='vizflow',warpdir='vizwarp',\
