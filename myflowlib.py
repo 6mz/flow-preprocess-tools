@@ -115,6 +115,11 @@ def save_list(fname,listname):
         for line in listname:
             f.write(str(line)+'\n')
 
+def read_list(fname):
+    with open(fname,'r') as f:
+        lists = [line.strip() for line in f.readlines() if len(line.strip()) > 0]
+    return lists
+
 
 #%%====================================================================
 def viz_flow(flow,logscale=True,scaledown=6,output=False):
