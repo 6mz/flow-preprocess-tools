@@ -268,7 +268,7 @@ def Sparplot(netout_flow,uncertainty_flow,groundtruth_flow,steps=50,\
         aepe=EPE_usingmask(flow,gt,res<threshold)
         res_aepe.append(aepe)
         res_threshold.append(threshold)
-        print('\r已完成'+str(int(len(res_aepe)/steps*50))+'%',end='')
+        print( u"\r已完成 "+str(int(len(res_aepe)/steps*50))+'%',end = '')
 
     best_aepe=[]
     best_threshold=[]
@@ -278,7 +278,7 @@ def Sparplot(netout_flow,uncertainty_flow,groundtruth_flow,steps=50,\
         aepe=EPE_usingmask(flow,gt,best<threshold)
         best_aepe.append(aepe)
         best_threshold.append(threshold)
-        print('\r已完成'+str(int(len(best_aepe)/steps*50+50))+'%',end='')
+        print( u"\r已完成"+str(int(len(best_aepe)/steps*50+50))+'%',end = '')
 
     x=(totalpixels-remainpixels)/totalpixels
     y1=res_aepe/aepe0

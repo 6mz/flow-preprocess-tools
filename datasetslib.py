@@ -19,7 +19,7 @@ class EasyTest(object):
         self.set_txtname("img1.txt", "img2.txt", "groundtruth.txt", "out.txt", "viz.txt", "warp.txt")
         self.set_targetdir("./data/test1","flow", "vizflow", "vizwarp")
         self.set_targetname("t","f.jpg","f_viz.jpg","A_forward.jpg")
-        self.set_movedir("A","B","gt",self.targetdir)
+        self.set_movedir(self.targetdir,"A","B","gt")
         self.set_movename(self.head,"A","B","gt")
         self.init_Randomlist()
 
@@ -61,7 +61,7 @@ class EasyTest(object):
         if(vizend):self.vizflowend = vizend 
         if(warpend):self.warpend = warpend 
 
-    def set_movedir(self,Adir=None,Bdir=None,gtdir=None,movedir=None):
+    def set_movedir(self,movedir=None,Adir=None,Bdir=None,gtdir=None):
         if(movedir):self.movedir = movedir 
         if(Adir):self.Adir = Adir 
         if(Bdir):self.Bdir = Bdir 
@@ -108,6 +108,7 @@ class EasyTest(object):
     def MovePics(self,A=True,B=True,gt=True):
         assert(self.num == len(self.imgA) == len(self.imgB) == len(self.gtflow))
         assert(False == self.isempty)
+        print('\nMoving images..')
         if(A):
             for i,item in enumerate(self.imgA):
                 source = item
@@ -116,7 +117,7 @@ class EasyTest(object):
                 destination = join(destination_path , destination_name)
                 r = MovePicsforLinux(source,destination)
                 if(r):
-                    print('MOVE  ' + item + '  SUCCESS!')
+                    print('MOVE  ' + item + '  TO  ' + destination + '  SUCCESS!')
                 else:
                     print('MOVE  ' + item + '  FAIL!')
         print('')
@@ -128,7 +129,7 @@ class EasyTest(object):
                 destination = join(destination_path , destination_name)
                 r = MovePicsforLinux(source,destination)
                 if(r):
-                    print('MOVE  ' + item + '  SUCCESS!')
+                    print('MOVE  ' + item + '  TO  ' + destination + '  SUCCESS!')
                 else:
                     print('MOVE  ' + item + '  FAIL!')
         print('')
@@ -140,7 +141,7 @@ class EasyTest(object):
                 destination = join(destination_path , destination_name)
                 r = MovePicsforLinux(source,destination)
                 if(r):
-                    print('MOVE  ' + item + '  SUCCESS!')
+                    print('MOVE  ' + item + '  TO  ' + destination + '  SUCCESS!')
                 else:
                     print('MOVE  ' + item + '  FAIL!')
         print('')
@@ -152,7 +153,7 @@ class EasyTest(object):
                           if item[0] is not 'imgA' and \
                              item[0] is not 'imgB' and \
                              item[0] is not 'gtflow']))
-        if(self.movedir != self.targetdir):print("WANNING: targetdir not equal to movedir")
+        if(self.movedir != self.targetdir):print("WANNING: targetdir not equal to movedir !!")
         print('')
 
 
@@ -206,7 +207,7 @@ def GenerateOutVizWarplist(file_path,save_txt_path,num,outdir='flow',vizdir='viz
 #GenerateRandomlist(root_path,'',num=5)
 def GenerateRandomlist(datasets_path, save_txt_path , num = 10,ltype = 'Sintel',ltype2 = 'clean'):
     res = Randomlist(datasets_path,item_num = num,ltype = ltype,ltype2 = ltype2)
-    print('saving list..')
+    print('Saving lists..')
     save_img1_name = join(save_txt_path, "img1.txt")
     save_img2_name = join(save_txt_path, "img2.txt")
     save_gtflow_name = join(save_txt_path, "groundtruth.txt")
