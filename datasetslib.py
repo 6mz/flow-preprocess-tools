@@ -19,8 +19,8 @@ class EasyTest(object):
         self.set_txtname("img1.txt", "img2.txt", "groundtruth.txt", "out.txt", "viz.txt", "warp.txt")
         self.set_targetdir("./data/test1","flow", "vizflow", "vizwarp")
         self.set_targetname("t","f.jpg","f_viz.jpg","A_forward.jpg")
-        self.set_movedir(self.targetdir,"A","B","gt")
-        self.set_movename(self.head,"A","B","gt")#dont need add '.jpg'
+        self.set_movedir("A","B","gt",self.targetdir)
+        self.set_movename(self.head,"A","B","gt")
         self.init_Randomlist()
 
     def init_Randomlist(self):
@@ -61,18 +61,21 @@ class EasyTest(object):
         if(vizend):self.vizflowend = vizend 
         if(warpend):self.warpend = warpend 
 
-    def set_movedir(self,movedir=None,Adir=None,Bdir=None,gtdir=None):
+    def set_movedir(self,Adir=None,Bdir=None,gtdir=None,movedir=None):
         if(movedir):self.movedir = movedir 
         if(Adir):self.Adir = Adir 
         if(Bdir):self.Bdir = Bdir 
         if(gtdir):self.gtdir = gtdir 
 
-    #dont need add '.jpg'
     def set_movename(self,head=None,Aend=None,Bend=None,gtend=None):
         if(head):self.mhead = head 
         if(Aend):self.Aend = Aend 
         if(Bend):self.Bend = Bend 
         if(gtend):self.gtend = gtend 
+
+    def Generatelist(self):
+        self.GenerateRandomlist()
+        self.GenerateOutVizWarplist()
 
     def GenerateRandomlist(self):
         print('saving list..')
@@ -103,8 +106,8 @@ class EasyTest(object):
           ('current folder' if len(self.txt_save_path)==0 else self.txt_save_path))
 
     def MovePics(self,A=True,B=True,gt=True):
-        assert(self.num==len(self.imgA)==len(self.imgB)==len(self.gtflow))
-        assert(False==self.isempty)
+        assert(self.num == len(self.imgA) == len(self.imgB) == len(self.gtflow))
+        assert(False == self.isempty)
         if(A):
             for i,item in enumerate(self.imgA):
                 source = item
@@ -116,6 +119,7 @@ class EasyTest(object):
                     print('MOVE  ' + item + '  SUCCESS!')
                 else:
                     print('MOVE  ' + item + '  FAIL!')
+        print('')
         if(B):
             for i,item in enumerate(self.imgB):
                 source = item
@@ -127,6 +131,7 @@ class EasyTest(object):
                     print('MOVE  ' + item + '  SUCCESS!')
                 else:
                     print('MOVE  ' + item + '  FAIL!')
+        print('')
         if(gt):
             for i,item in enumerate(self.gtflow):
                 source = item
@@ -138,6 +143,7 @@ class EasyTest(object):
                     print('MOVE  ' + item + '  SUCCESS!')
                 else:
                     print('MOVE  ' + item + '  FAIL!')
+        print('')
 
 
     def print_all(self):
@@ -146,9 +152,9 @@ class EasyTest(object):
                           if item[0] is not 'imgA' and \
                              item[0] is not 'imgB' and \
                              item[0] is not 'gtflow']))
-        print('\n')
-#(Aname,Bname,gtname)
-#(newn)
+        if(self.movedir != self.targetdir):print("WANNING: targetdir not equal to movedir")
+        print('')
+
 
 
 #============================== funtions ========================================
