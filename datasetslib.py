@@ -2,6 +2,7 @@
 from os.path import *
 from glob import glob
 import random
+import subprocess
 
 from myflowlib import read_gen,save_list,read_list
 
@@ -14,10 +15,12 @@ class EasyTest(object):
         self.ltype2 = ltype2 
         self.num = num
         
-        self.set_txtpath()
+        self.set_txtpath("./txts")
         self.set_txtname("img1.txt", "img2.txt", "groundtruth.txt", "out.txt", "viz.txt", "warp.txt")
         self.set_targetdir("./data/test1","flow", "vizflow", "vizwarp")
-        self.set_names("t","f.jpg","f_viz.jpg","A_forward.jpg")
+        self.set_targetname("t","f.jpg","f_viz.jpg","A_forward.jpg")
+        self.set_movedir(self.targetdir,"A","B","gt")
+        self.set_movename(self.head,"A","B","gt")#dont need add '.jpg'
         self.init_Randomlist()
 
     def init_Randomlist(self):
@@ -37,6 +40,7 @@ class EasyTest(object):
         self.txt_save_path = txt_save_path
 
     def set_txtname(self,img1=None,img2=None,gt=None,out=None,viz=None,warp=None):
+        img1,img2,gt,out,viz,warp = endcheck('.txt',img1,img2,gt,out,viz,warp)
         if(img1):self.img1txtname = img1 
         if(img2):self.img2txtname = img2 
         if(gt):self.groundtruthtxtname = gt 
@@ -50,53 +54,127 @@ class EasyTest(object):
         if(vizdir):self.vizflowdir = vizdir 
         if(warpdir):self.warpdir = warpdir 
 
-    def set_names(self,head=None,outend=None,vizend=None,warpend=None):
+    def set_targetname(self,head=None,outend=None,vizend=None,warpend=None):
+        outend,vizend,warpend = endcheck('.jpg',outend,vizend,warpend)
         if(head):self.head = head 
         if(outend):self.outflowend = outend 
         if(vizend):self.vizflowend = vizend 
         if(warpend):self.warpend = warpend 
 
+    def set_movedir(self,movedir=None,Adir=None,Bdir=None,gtdir=None):
+        if(movedir):self.movedir = movedir 
+        if(Adir):self.Adir = Adir 
+        if(Bdir):self.Bdir = Bdir 
+        if(gtdir):self.gtdir = gtdir 
+
+    #dont need add '.jpg'
+    def set_movename(self,head=None,Aend=None,Bend=None,gtend=None):
+        if(head):self.mhead = head 
+        if(Aend):self.Aend = Aend 
+        if(Bend):self.Bend = Bend 
+        if(gtend):self.gtend = gtend 
+
     def GenerateRandomlist(self):
         print('saving list..')
-        save_img1_name = join(self.txt_save_path, self.img1txtname)
-        save_img2_name = join(self.txt_save_path, self.img2txtname)
-        save_gtflow_name = join(self.txt_save_path, self.groundtruthtxtname)
-        save_list(save_img1_name,self.imgA)
-        save_list(save_img2_name,self.imgB)
-        save_list(save_gtflow_name,self.gtflow)
-        print('output %s,%s,%s in '%(self.img1txtname,self.img2txtname,self.groundtruthtxtname) + \
+        self.save_img1_name = join(self.txt_save_path, self.img1txtname)
+        self.save_img2_name = join(self.txt_save_path, self.img2txtname)
+        self.save_gtflow_name = join(self.txt_save_path, self.groundtruthtxtname)
+        save_list(self.save_img1_name,self.imgA)
+        save_list(self.save_img2_name,self.imgB)
+        save_list(self.save_gtflow_name,self.gtflow)
+        print('OUTPUT TXTS: %s,%s,%s IN '%(self.img1txtname,self.img2txtname,self.groundtruthtxtname) + \
+          ('current folder' if len(self.txt_save_path)==0 else self.txt_save_path))
 
-    def GenerateOutVizWarplist(self)
-        save_out_name = join(save_txt_path,'out.txt')
-        save_viz_name = join(save_txt_path,'viz.txt')
-        save_warp_name = join(save_txt_path,'warp.txt')
-        idlist = list(map(str,range(num)))
-        outlist = [head+x+outend for x in idlist]
-        vizlist = [head+x+vizend for x in idlist]
-        warplist = [head+x+warpend for x in idlist]
-        outlist = list(map(join,[file_path]*num,[outdir]*num,outlist))
-        vizlist = list(map(join,[file_path]*num,[vizdir]*num,vizlist))
-        warplist = list(map(join,[file_path]*num,[warpdir]*num,warplist))
-        save_list(save_out_name,outlist)
-        save_list(save_viz_name,vizlist)
-        save_list(save_warp_name,warplist)
-        print('output out.txt,viz.txt,warp.txt in ' + \
-              'current folder' if len(save_txt_path)==0 else save_txt_path)
+    def GenerateOutVizWarplist(self):
+        self.save_out_name = join(self.txt_save_path,self.outflowtxtname)
+        self.save_viz_name = join(self.txt_save_path,self.vizflowtxtname)
+        self.save_warp_name = join(self.txt_save_path,self.warptxtname)
+        idlist = list(map(str,range(self.num)))
+        outlist = [self.head+x+self.outflowend for x in idlist]
+        vizlist = [self.head+x+self.vizflowend for x in idlist]
+        warplist = [self.head+x+self.warpend for x in idlist]
+        outlist = list(map(join,[self.targetdir]*self.num,[self.outflowdir]*self.num,outlist))
+        vizlist = list(map(join,[self.targetdir]*self.num,[self.vizflowdir]*self.num,vizlist))
+        warplist = list(map(join,[self.targetdir]*self.num,[self.warpdir]*self.num,warplist))
+        save_list(self.save_out_name,outlist)
+        save_list(self.save_viz_name,vizlist)
+        save_list(self.save_warp_name,warplist)
+        print('OUTPUT TXTS: %s,%s,%s IN '%(self.outflowtxtname,self.vizflowtxtname,self.warptxtname) + \
+          ('current folder' if len(self.txt_save_path)==0 else self.txt_save_path))
+
+    def MovePics(self,A=True,B=True,gt=True):
+        assert(self.num==len(self.imgA)==len(self.imgB)==len(self.gtflow))
+        assert(False==self.isempty)
+        if(A):
+            for i,item in enumerate(self.imgA):
+                source = item
+                destination_name = self.mhead + str(i) + self.Aend
+                destination_path = join(self.movedir , self.Adir)
+                destination = join(destination_path , destination_name)
+                r = MovePicsforLinux(source,destination)
+                if(r):
+                    print('MOVE  ' + item + '  SUCCESS!')
+                else:
+                    print('MOVE  ' + item + '  FAIL!')
+        if(B):
+            for i,item in enumerate(self.imgB):
+                source = item
+                destination_name = self.mhead + str(i) + self.Bend
+                destination_path = join(self.movedir , self.Bdir)
+                destination = join(destination_path , destination_name)
+                r = MovePicsforLinux(source,destination)
+                if(r):
+                    print('MOVE  ' + item + '  SUCCESS!')
+                else:
+                    print('MOVE  ' + item + '  FAIL!')
+        if(gt):
+            for i,item in enumerate(self.gtflow):
+                source = item
+                destination_name = self.mhead + str(i) + self.gtend
+                destination_path = join(self.movedir , self.gtdir)
+                destination = join(destination_path , destination_name)
+                r = MovePicsforLinux(source,destination)
+                if(r):
+                    print('MOVE  ' + item + '  SUCCESS!')
+                else:
+                    print('MOVE  ' + item + '  FAIL!')
 
 
     def print_all(self):
-        print ('arg for EasyTest:')
-        print ('\n'.join(['%s:%s' % item for item in self.__dict__.items()]))
+        print ('\nArg For EasyTest:')
+        print ('\n'.join(['%-20s:%-20s' % item for item in self.__dict__.items() \
+                          if item[0] is not 'imgA' and \
+                             item[0] is not 'imgB' and \
+                             item[0] is not 'gtflow']))
+        print('\n')
 #(Aname,Bname,gtname)
 #(newn)
 
 
 #============================== funtions ========================================
 
-def MovePicsforLinux(namelist,target_path):
-    path,name=os.path.split(namelist)
+def MovePicsforLinux(source ,destination ):
+    if(isfile(source)):
+        _,e = splitext(source)
+        n,_ = splitext(destination)
+        destination = n + e
+        subprocess.call(['cp', source, destination])
+        if(isfile(source)):
+            return True
+    return False
 
-
+def endcheck(end,*arg):
+    res=[]
+    for item in arg:
+        if(item):
+            _,e = splitext(item)
+            if(e):
+                res.append(item)
+            else:
+                res.append(item+end)
+        else:
+            res.append(item)
+    return res
 
 #GenerateOutVizWarplist('./data/test1','',5,vizdir='show',warpdir='show')
 def GenerateOutVizWarplist(file_path,save_txt_path,num,outdir='flow',vizdir='vizflow',warpdir='vizwarp',\

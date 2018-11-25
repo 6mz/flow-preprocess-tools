@@ -47,7 +47,9 @@ import os
 #subprocess.call(['cp', 'img2.txt', 'img1.txt'])
 
 #  ================   part 3   ==========================
-test=EasyTest('E:\\example',ltype2='finall',num=20)
-test.set_txtname('1.txt')
+test=EasyTest('E:\\example',ltype2='finall',num=5)
+#test.set_txtname('1')
+#test.set_txtname(viz='vizssss.txt')
 test.GenerateRandomlist()
+test.GenerateOutVizWarplist()
 test.print_all()
