@@ -4,33 +4,37 @@ from glob import glob
 import random
 import subprocess
 import numpy as np
+
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from PIL import Image
 from scipy.misc import imsave,imread
 
-from myflowlib import read_gen,save_list,read_list
+from myflowlib import read_gen,save_list,read_list,save_3ziplist
 from myflowlib import Sparplot,EPE,EPE_usingmask,abs_flow,viz_flow
 
 
 
 class EasyTest(object):
-    def __init__(self,datasets_path,ltype='Sintel' ,ltype2='clean',num=10):
+    def __init__(self,datasets_path,ltype='Sintel' ,ltype2='clean',dirs = './data/yourdir',num=10):
         self.datasets_path = datasets_path
         self.ltype = ltype 
         self.ltype2 = ltype2 
         self.num = num
-        
+        self.init_dir(dirs)
+
         self.set_txtpath("./txts")
         self.set_txtname("img1.txt", "img2.txt", "groundtruth.txt", "out.txt", "viz.txt", "warp.txt")
-        self.set_txtsparname("sparplot.txt","spardatalist.txt","sparbest.txt","spargrayflow.txt",\
+        self.set_txtsparname("sparplot.txt","spardatalist.txt","sparbest.txt","spargrayres.txt",\
                              "spargraybest.txt","spargraygt.txt")
-        self.set_targetdir("./data/test1","flow", "vizflow", "vizwarp" )
+        self.set_targetdir("","flow", "vizflow", "vizwarp" )
         self.set_targetname("t","f.flo","f_viz.jpg","A_forward.jpg")
-        self.set_movedir(self.targetdir,"A","B","gt")
+        self.set_movedir("","A","B","gt")
         self.set_movename(self.head,"A","B","gt")
         self.set_spar(20,"default")
-        self.set_spardir(self.targetdir,"sparplot","spardata",self.vizflowdir,"vizflow_gray","vizflow_gray","vizflow_gray")
-        self.set_sparname("sp.jpg","sd.txt","f_viz_best.jpg","f_gviz.jpg","f_gviz_best.jpg","f_gviz_gt.jpg")
+        self.set_spardir("","sparplot","spardata",self.vizflowdir,"vizflow_gray","vizflow_gray","vizflow_gray")
+        self.set_sparname(self.head,"sp.jpg","sd.txt","f_viz_bestres.jpg","f_gviz_res.jpg","f_gviz_bestres.jpg","f_gviz_gt.jpg")
         self.init_Randomlist()
 
     def init_Randomlist(self):
@@ -46,8 +50,20 @@ class EasyTest(object):
             self.imgB = res[1]
             self.gtflow = res[2]
 
+    def init_dir(self,dirs):
+        self.dir = dirs
+        self.targetdir = dirs
+        self.movedir = dirs
+        self.spar_dir = dirs
+
     def set_txtpath(self,txt_save_path = '' ):
         self.txt_save_path = txt_save_path
+
+    def set_dir(self,dirs):
+            self.dir = dirs
+            self.targetdir = join(self.dir,self.targetdir_short)
+            self.movedir = join(self.dir,self.movedir_short)
+            self.spar_dir = join(self.dir,self.spar_dir_short)
 
     def set_txtname(self,img1=None,img2=None,gt=None,out=None,viz=None,warp=None):
         img1,img2,gt,out,viz,warp = endcheck('.txt',img1,img2,gt,out,viz,warp)
@@ -58,17 +74,19 @@ class EasyTest(object):
         if(viz):self.vizflow_txtname = viz 
         if(warp):self.warp_txtname = warp 
 
-    def set_txtsparname(self,plot=None,data=None,best=None,grayflow=None,graybest=None,graygt=None):
-        plot,data,best,grayflow,graybest,graygt=endcheck('.txt',plot,data,best,grayflow,graybest,graygt)
+    def set_txtsparname(self,plot=None,data=None,best=None,grayres=None,graybest=None,graygt=None):
+        plot,data,best,grayres,graybest,graygt=endcheck('.txt',plot,data,best,grayres,graybest,graygt)
         if(data):self.spardata_txtname = data
         if(plot):self.sparplot_txtname = plot
         if(best):self.sparbest_txtname = best
-        if(grayflow):self.spargrayflow_txtname = grayflow
+        if(grayres):self.spargrayres_txtname = grayres
         if(graybest):self.spargraybest_txtname = graybest
         if(graygt):self.spargraygt_txtname = graygt
 
-    def set_targetdir(self,targetdir=None,outdir=None,vizdir=None,warpdir=None):
-        if(targetdir):self.targetdir = targetdir 
+    def set_targetdir(self,targetdir = None,outdir=None,vizdir=None,warpdir=None):
+        if(None!=targetdir):
+            self.targetdir_short = targetdir
+            self.targetdir = join(self.dir,self.targetdir_short)
         if(outdir):self.outflowdir = outdir 
         if(vizdir):self.vizflowdir = vizdir 
         if(warpdir):self.warpdir = warpdir 
@@ -82,7 +100,9 @@ class EasyTest(object):
         if(warpend):self.warpend = warpend 
 
     def set_movedir(self,movedir=None,Adir=None,Bdir=None,gtdir=None):
-        if(movedir):self.movedir = movedir 
+        if(None!=movedir):
+            self.movedir_short = movedir
+            self.movedir = join(self.dir,self.movedir_short)
         if(Adir):self.Adir = Adir 
         if(Bdir):self.Bdir = Bdir 
         if(gtdir):self.gtdir = gtdir 
@@ -98,24 +118,27 @@ class EasyTest(object):
         if(style):self.spar_style = style
 
     def set_spardir(self,spardir=None,plotdir=None,datadir=None,bestdir=None,\
-                    grayflowdir=None,graybestdir=None,graygtdir=None):
-        if(spardir):self.spar_dir = spardir
+                    grayresdir=None,graybestdir=None,graygtdir=None):
+        if(None!=spardir):
+            self.spar_dir_short = spardir
+            self.spar_dir = join(self.dir,self.spar_dir_short)
         if(plotdir):self.spar_plotdir = plotdir
         if(datadir):self.spar_datadir = datadir
         if(bestdir):self.spar_bestdir = bestdir
-        if(grayflowdir):self.spar_grayflowdir = grayflowdir
+        if(grayresdir):self.spar_grayresdir = grayresdir
         if(graybestdir):self.spar_graybestdir = graybestdir
         if(graygtdir):self.spar_graygtdir = graygtdir
 
-    def set_sparname(self,plotend=None,dataend=None,bestend=None,\
-                    grayflowend=None,graybestend=None,graygtend=None):
-        plotend,bestend,grayflowend,graybestend,graygtend = \
-            endcheck('.jpg',plotend,bestend,grayflowend,graybestend,graygtend)
+    def set_sparname(self,head=None,plotend=None,dataend=None,bestend=None,\
+                    grayresend=None,graybestend=None,graygtend=None):
+        plotend,bestend,grayresend,graybestend,graygtend = \
+            endcheck('.jpg',plotend,bestend,grayresend,graybestend,graygtend)
         dataend = endcheck('.txt',dataend)
+        if(head):self.spar_head = head 
         if(plotend):self.spar_plotend = plotend
         if(dataend):self.spar_dataend = dataend
         if(bestend):self.spar_bestend = bestend
-        if(grayflowend):self.spar_grayflowend = grayflowend
+        if(grayresend):self.spar_grayresend = grayresend
         if(graybestend):self.spar_graybestend = graybestend
         if(graygtend):self.spar_graygtend = graygtend
 
@@ -143,12 +166,13 @@ class EasyTest(object):
         outlist = [self.head+x+self.outflowend for x in idlist]
         vizlist = [self.head+x+self.vizflowend for x in idlist]
         warplist = [self.head+x+self.warpend for x in idlist]
-        outlist = list(map(join,[self.targetdir]*self.num,[self.outflowdir]*self.num,outlist))
-        vizlist = list(map(join,[self.targetdir]*self.num,[self.vizflowdir]*self.num,vizlist))
-        warplist = list(map(join,[self.targetdir]*self.num,[self.warpdir]*self.num,warplist))
-        save_list(self.save_out_name,outlist)
-        save_list(self.save_viz_name,vizlist)
-        save_list(self.save_warp_name,warplist)
+        self.outlist = list(map(join,[self.targetdir]*self.num,[self.outflowdir]*self.num,outlist))
+        self.vizlist = list(map(join,[self.targetdir]*self.num,[self.vizflowdir]*self.num,vizlist))
+        self.warplist = list(map(join,[self.targetdir]*self.num,[self.warpdir]*self.num,warplist))
+        # reslist 由PWC-Net生成
+        save_list(self.save_out_name,self.outlist)
+        save_list(self.save_viz_name,self.vizlist)
+        save_list(self.save_warp_name,self.warplist)
         print('OUTPUT TXTS: %s,%s,%s IN '%(self.outflow_txtname,self.vizflow_txtname,self.warp_txtname) + \
           ('current folder' if len(self.txt_save_path)==0 else self.txt_save_path))
 
@@ -156,32 +180,31 @@ class EasyTest(object):
         self.save_sparplot_name = join(self.txt_save_path,self.sparplot_txtname)
         self.save_spardata_name = join(self.txt_save_path,self.spardata_txtname)
         self.save_sparbest_name = join(self.txt_save_path,self.sparbest_txtname)
-        self.save_spargrayflow_name = join(self.txt_save_path,self.spargrayflow_txtname)
+        self.save_spargrayres_name = join(self.txt_save_path,self.spargrayres_txtname)
         self.save_spargraybest_name = join(self.txt_save_path,self.spargraybest_txtname)
         self.save_spargraygt_name = join(self.txt_save_path,self.spargraygt_txtname)
         idlist = list(map(str,range(self.num)))
-        spar_plotlist = [self.head+x+self.spar_dataend for x in idlist]
-        spar_datalist = [self.head+x+self.spar_plotend for x in idlist]
-        spar_bestlist = [self.head+x+self.spar_bestend for x in idlist]
-        spar_grayflowlist = [self.head+x+self.spar_grayflowend for x in idlist]
-        spar_graybestlist = [self.head+x+self.spar_graybestend for x in idlist]
-        spar_graygtlist = [self.head+x+self.spar_graygtend for x in idlist]
+        spar_plotlist = [self.spar_head+x+self.spar_plotend for x in idlist]
+        spar_datalist = [self.spar_head+x+self.spar_dataend for x in idlist]
+        spar_bestlist = [self.spar_head+x+self.spar_bestend for x in idlist]
+        spar_grayreslist = [self.spar_head+x+self.spar_grayresend for x in idlist]
+        spar_graybestlist = [self.spar_head+x+self.spar_graybestend for x in idlist]
+        spar_graygtlist = [self.spar_head+x+self.spar_graygtend for x in idlist]
         self.spar_plotlist = list(map(join,[self.spar_dir]*self.num,[self.spar_plotdir]*self.num,spar_plotlist))
         self.spar_datalist = list(map(join,[self.spar_dir]*self.num,[self.spar_datadir]*self.num,spar_datalist))
         self.spar_bestlist = list(map(join,[self.spar_dir]*self.num,[self.spar_bestdir]*self.num,spar_bestlist))
-        self.spar_grayflowlist = list(map(join,[self.spar_dir]*self.num,[self.spar_grayflowdir]*self.num,spar_grayflowlist))
+        self.spar_grayreslist = list(map(join,[self.spar_dir]*self.num,[self.spar_grayresdir]*self.num,spar_grayreslist))
         self.spar_graybestlist = list(map(join,[self.spar_dir]*self.num,[self.spar_graybestdir]*self.num,spar_graybestlist))
         self.spar_graygtlist = list(map(join,[self.spar_dir]*self.num,[self.spar_graygtdir]*self.num,spar_graygtlist))
         save_list(self.save_sparplot_name,self.spar_plotlist)
         save_list(self.save_spardata_name,self.spar_datalist)
         save_list(self.save_sparbest_name,self.spar_bestlist)
-        save_list(self.save_spargrayflow_name,self.spar_grayflowlist)
+        save_list(self.save_spargrayres_name,self.spar_grayreslist)
         save_list(self.save_spargraybest_name,self.spar_graybestlist)
         save_list(self.save_spargraygt_name,self.spar_graygtlist)
-
         print('OUTPUT TXTS: %s,%s,%s,%s,%s,%s IN '%\
               (self.sparplot_txtname,self.spardata_txtname,self.sparbest_txtname,
-               self.spargrayflow_txtname,self.spargraybest_txtname,self.spargraygt_txtname) + \
+               self.spargrayres_txtname,self.spargraybest_txtname,self.spargraygt_txtname) + \
               ('current folder' if len(self.txt_save_path)==0 else self.txt_save_path))
 
 
@@ -228,29 +251,31 @@ class EasyTest(object):
         print('')
 
     def GenerateSparplots(self):
-        1
+        flowlist = self.outlist
+        gtflowlist = self.gtflow
+        for i,flowname in enumerate(flowlist):
+            n,e = splitext(flowname)
+            resflowname = n + '_res' + e
+            flow = read_gen(flowname)
+            resflow = read_gen(resflowname)
+            gtflow = read_gen(gtflowlist[i])
+            self.SparplotSimple(i,flow,resflow,gtflow)
 
-    
-    def SparplotSimple(self,netout_flow,uncertainty_flow,groundtruth_flow):
-        gt=groundtruth_flow
-        res=uncertainty_flow
-        flow=netout_flow
-        assert flow.shape==res.shape==gt.shape
-        best=gt - flow
+    def SparplotSimple(self,ids,netout_flow,uncertainty_flow,groundtruth_flow):
+
+        gt = groundtruth_flow
+        res = abs_flow(uncertainty_flow)
+        flow = netout_flow
+        assert flow.shape==uncertainty_flow.shape==gt.shape
+        best = abs_flow(gt - flow)
         total_steps=self.spar_steps
 
         aepe0=EPE(flow,gt)
         print('AEPE:'+str(aepe0))
-
         totalpixels=int(flow.size/2)
         remainpixels=np.linspace(totalpixels,0,total_steps,endpoint=False,dtype='int')
-
-        res=abs_flow(res)
-        best=abs_flow(best)
-
         res_sort=res.flatten()
         best_sort=best.flatten()
-
         res_sort_index=np.argsort(res_sort)
         best_sort_index=np.argsort(best_sort)
 
@@ -263,7 +288,7 @@ class EasyTest(object):
             res_aepe.append(aepe)
             res_threshold.append(threshold)
             print( u"\r已完成 "+str(int(len(res_aepe)/total_steps*50))+'%',end = '')
-    
+
         best_aepe=[]
         best_threshold=[]
         for p in remainpixels:
@@ -278,7 +303,6 @@ class EasyTest(object):
         y1=res_aepe/aepe0
         y2=best_aepe/aepe0
 
-
         plt.plot(x, y1, mec='r', mfc='w',label='Pred-Merged')
         plt.plot(x, y2, ms=10,label='Oracle')
         plt.legend()  # 让图例生效
@@ -286,23 +310,21 @@ class EasyTest(object):
         plt.xlabel('Fraction of Removed Pixels') #X轴标签
         plt.ylabel('Average EPE (Normalized)') #Y轴标签
         plt.title('Sparsification Plots') #标题
-        print('\nsave fig')
-        plt.savefig(path+'Sparsification Plots.png')
-
-#        if(is_print):
-#            print('Removed\tPreAEPE\tOraAEPE')
-#            for xi,y1i,y2i in zip(x,y1,y2):
-#                print('%.2f'% xi,'\t%.4f'% y1i,'\t%.4f'% y2i)
-        print('save 3 imgs !')
-        if(self.style=='gray'):
-            gt=abs_flow(gt)
-            imsave('net_res_flow.jpg', res)
-            imsave('best_res_flow.jpg', best)
-            imsave('groundtruth_flow.jpg', gt)
-        else:
-            best=Image.fromarray(viz_flow(best))
-            imsave(path+'best_res_flow.jpg', best)
-
+        plt.savefig(self.spar_plotlist[ids])
+        plt.close() 
+        save_3ziplist(self.spar_datalist[ids],zip(x,y1,y2),\
+                      'aepe0:'+str(aepe0)+'\nRemoved\tPreAEPE\tOraAEPE\n')
+        print('save fig, data and imgs !')
+        if(self.spar_style=='gray' or self.spar_style=='default'):
+            # 1 通道
+            absgt=abs_flow(gt)
+            imsave(self.spar_grayreslist[ids], res/np.max(res))
+            imsave(self.spar_graybestlist[ids], best/np.max(best))
+            imsave(self.spar_graygtlist[ids], absgt/np.max(absgt))
+        if(self.spar_style=='color' or self.spar_style=='default'):
+            # 2通道
+            bestflow=Image.fromarray(viz_flow(gt - flow))
+            imsave(self.spar_bestlist[ids], bestflow)
 
         return (remainpixels,res_aepe,best_aepe,aepe0)
 
@@ -320,7 +342,8 @@ class EasyTest(object):
                              item[0] is not 'imgB' and \
                              item[0] is not 'gtflow' and \
                              'list' not in item[0]]))
-        if(self.movedir != self.targetdir):print("WANNING: targetdir not equal to movedir !!")
+        if('./data/yourdir' == self.dir):print("WANNING: not set dir !!")
+        
         print('')
 
 

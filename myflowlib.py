@@ -115,6 +115,12 @@ def save_list(fname,listname):
         for line in listname:
             f.write(str(line)+'\n')
 
+def save_3ziplist(fname,ziplist,title=''):
+    with open(fname,'w') as f:
+        f.write(title)
+        for xi,y1i,y2i in ziplist:
+            f.write('%.2f\t%.4f\t%.4f\n'% (xi,y1i,y2i))
+
 def read_list(fname):
     with open(fname,'r') as f:
         lists = [line.strip() for line in f.readlines() if len(line.strip()) > 0]
