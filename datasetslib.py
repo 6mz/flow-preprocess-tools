@@ -22,14 +22,15 @@ class EasyTest(object):
         
         self.set_txtpath("./txts")
         self.set_txtname("img1.txt", "img2.txt", "groundtruth.txt", "out.txt", "viz.txt", "warp.txt")
-        self.set_txtsparname("spar.txt")
+        self.set_txtsparname("sparplot.txt","spardatalist.txt","sparbest.txt","spargrayflow.txt",\
+                             "spargraybest.txt","spargraygt.txt")
         self.set_targetdir("./data/test1","flow", "vizflow", "vizwarp" )
         self.set_targetname("t","f.flo","f_viz.jpg","A_forward.jpg")
         self.set_movedir(self.targetdir,"A","B","gt")
         self.set_movename(self.head,"A","B","gt")
         self.set_spar(20,"default")
-        self.set_spardir("spar")
-        self.set_sparname("spar")
+        self.set_spardir(self.targetdir,"sparplot","spardata",self.vizflowdir,"vizflow_gray","vizflow_gray","vizflow_gray")
+        self.set_sparname("sp.jpg","sd.txt","f_viz_best.jpg","f_gviz.jpg","f_gviz_best.jpg","f_gviz_gt.jpg")
         self.init_Randomlist()
 
     def init_Randomlist(self):
@@ -50,18 +51,21 @@ class EasyTest(object):
 
     def set_txtname(self,img1=None,img2=None,gt=None,out=None,viz=None,warp=None):
         img1,img2,gt,out,viz,warp = endcheck('.txt',img1,img2,gt,out,viz,warp)
-        if(img1):self.img1txtname = img1 
-        if(img2):self.img2txtname = img2 
-        if(gt):self.groundtruthtxtname = gt 
-        if(out):self.outflowtxtname = out 
-        if(viz):self.vizflowtxtname = viz 
-        if(warp):self.warptxtname = warp 
+        if(img1):self.img1_txtname = img1 
+        if(img2):self.img2_txtname = img2 
+        if(gt):self.groundtruth_txtname = gt 
+        if(out):self.outflow_txtname = out 
+        if(viz):self.vizflow_txtname = viz 
+        if(warp):self.warp_txtname = warp 
 
-    def set_txtsparname(self,spar=None):
-        spar=endcheck('.txt',spar)
-        if(spar):self.spartxtname = spar
-
-
+    def set_txtsparname(self,plot=None,data=None,best=None,grayflow=None,graybest=None,graygt=None):
+        plot,data,best,grayflow,graybest,graygt=endcheck('.txt',plot,data,best,grayflow,graybest,graygt)
+        if(data):self.spardata_txtname = data
+        if(plot):self.sparplot_txtname = plot
+        if(best):self.sparbest_txtname = best
+        if(grayflow):self.spargrayflow_txtname = grayflow
+        if(graybest):self.spargraybest_txtname = graybest
+        if(graygt):self.spargraygt_txtname = graygt
 
     def set_targetdir(self,targetdir=None,outdir=None,vizdir=None,warpdir=None):
         if(targetdir):self.targetdir = targetdir 
@@ -93,16 +97,27 @@ class EasyTest(object):
         if(steps):self.spar_steps = steps 
         if(style):self.spar_style = style
 
-    def set_spardir(self,spardir=None):
-        if(spardir):self.spardir = spardir 
+    def set_spardir(self,spardir=None,plotdir=None,datadir=None,bestdir=None,\
+                    grayflowdir=None,graybestdir=None,graygtdir=None):
+        if(spardir):self.spar_dir = spardir
+        if(plotdir):self.spar_plotdir = plotdir
+        if(datadir):self.spar_datadir = datadir
+        if(bestdir):self.spar_bestdir = bestdir
+        if(grayflowdir):self.spar_grayflowdir = grayflowdir
+        if(graybestdir):self.spar_graybestdir = graybestdir
+        if(graygtdir):self.spar_graygtdir = graygtdir
 
-    def set_sparname(self,sparend=None):
-        sparend = endcheck('.jpg',sparend)
-        if(sparend):self.sparend = sparend 
-
-
-
-
+    def set_sparname(self,plotend=None,dataend=None,bestend=None,\
+                    grayflowend=None,graybestend=None,graygtend=None):
+        plotend,bestend,grayflowend,graybestend,graygtend = \
+            endcheck('.jpg',plotend,bestend,grayflowend,graybestend,graygtend)
+        dataend = endcheck('.txt',dataend)
+        if(plotend):self.spar_plotend = plotend
+        if(dataend):self.spar_dataend = dataend
+        if(bestend):self.spar_bestend = bestend
+        if(grayflowend):self.spar_grayflowend = grayflowend
+        if(graybestend):self.spar_graybestend = graybestend
+        if(graygtend):self.spar_graygtend = graygtend
 
     def Generatelist(self):
         self.GenerateRandomlist()
@@ -111,19 +126,19 @@ class EasyTest(object):
 
     def GenerateRandomlist(self):
         print('saving list..')
-        self.save_img1_name = join(self.txt_save_path, self.img1txtname)
-        self.save_img2_name = join(self.txt_save_path, self.img2txtname)
-        self.save_gtflow_name = join(self.txt_save_path, self.groundtruthtxtname)
+        self.save_img1_name = join(self.txt_save_path, self.img1_txtname)
+        self.save_img2_name = join(self.txt_save_path, self.img2_txtname)
+        self.save_gtflow_name = join(self.txt_save_path, self.groundtruth_txtname)
         save_list(self.save_img1_name,self.imgA)
         save_list(self.save_img2_name,self.imgB)
         save_list(self.save_gtflow_name,self.gtflow)
-        print('OUTPUT TXTS: %s,%s,%s IN '%(self.img1txtname,self.img2txtname,self.groundtruthtxtname) + \
+        print('OUTPUT TXTS: %s,%s,%s IN '%(self.img1_txtname,self.img2_txtname,self.groundtruth_txtname) + \
           ('current folder' if len(self.txt_save_path)==0 else self.txt_save_path))
 
     def GenerateOutVizWarplist(self):
-        self.save_out_name = join(self.txt_save_path,self.outflowtxtname)
-        self.save_viz_name = join(self.txt_save_path,self.vizflowtxtname)
-        self.save_warp_name = join(self.txt_save_path,self.warptxtname)
+        self.save_out_name = join(self.txt_save_path,self.outflow_txtname)
+        self.save_viz_name = join(self.txt_save_path,self.vizflow_txtname)
+        self.save_warp_name = join(self.txt_save_path,self.warp_txtname)
         idlist = list(map(str,range(self.num)))
         outlist = [self.head+x+self.outflowend for x in idlist]
         vizlist = [self.head+x+self.vizflowend for x in idlist]
@@ -134,18 +149,40 @@ class EasyTest(object):
         save_list(self.save_out_name,outlist)
         save_list(self.save_viz_name,vizlist)
         save_list(self.save_warp_name,warplist)
-        print('OUTPUT TXTS: %s,%s,%s IN '%(self.outflowtxtname,self.vizflowtxtname,self.warptxtname) + \
+        print('OUTPUT TXTS: %s,%s,%s IN '%(self.outflow_txtname,self.vizflow_txtname,self.warp_txtname) + \
           ('current folder' if len(self.txt_save_path)==0 else self.txt_save_path))
 
     def GenerateSparlist(self):
-        self.save_spar_name = join(self.txt_save_path,self.spartxtname)
+        self.save_sparplot_name = join(self.txt_save_path,self.sparplot_txtname)
+        self.save_spardata_name = join(self.txt_save_path,self.spardata_txtname)
+        self.save_sparbest_name = join(self.txt_save_path,self.sparbest_txtname)
+        self.save_spargrayflow_name = join(self.txt_save_path,self.spargrayflow_txtname)
+        self.save_spargraybest_name = join(self.txt_save_path,self.spargraybest_txtname)
+        self.save_spargraygt_name = join(self.txt_save_path,self.spargraygt_txtname)
         idlist = list(map(str,range(self.num)))
-        sparlist = [self.head+x+self.sparend for x in idlist]
-        sparlist = list(map(join,[self.targetdir]*self.num,[self.spardir]*self.num,sparlist))
-        self.sparlist = sparlist
-        save_list(self.save_spar_name,sparlist)
-        print('OUTPUT TXTS: %s IN '%(self.spartxtname) + \
-          ('current folder' if len(self.txt_save_path)==0 else self.txt_save_path))
+        spar_plotlist = [self.head+x+self.spar_dataend for x in idlist]
+        spar_datalist = [self.head+x+self.spar_plotend for x in idlist]
+        spar_bestlist = [self.head+x+self.spar_bestend for x in idlist]
+        spar_grayflowlist = [self.head+x+self.spar_grayflowend for x in idlist]
+        spar_graybestlist = [self.head+x+self.spar_graybestend for x in idlist]
+        spar_graygtlist = [self.head+x+self.spar_graygtend for x in idlist]
+        self.spar_plotlist = list(map(join,[self.spar_dir]*self.num,[self.spar_plotdir]*self.num,spar_plotlist))
+        self.spar_datalist = list(map(join,[self.spar_dir]*self.num,[self.spar_datadir]*self.num,spar_datalist))
+        self.spar_bestlist = list(map(join,[self.spar_dir]*self.num,[self.spar_bestdir]*self.num,spar_bestlist))
+        self.spar_grayflowlist = list(map(join,[self.spar_dir]*self.num,[self.spar_grayflowdir]*self.num,spar_grayflowlist))
+        self.spar_graybestlist = list(map(join,[self.spar_dir]*self.num,[self.spar_graybestdir]*self.num,spar_graybestlist))
+        self.spar_graygtlist = list(map(join,[self.spar_dir]*self.num,[self.spar_graygtdir]*self.num,spar_graygtlist))
+        save_list(self.save_sparplot_name,self.spar_plotlist)
+        save_list(self.save_spardata_name,self.spar_datalist)
+        save_list(self.save_sparbest_name,self.spar_bestlist)
+        save_list(self.save_spargrayflow_name,self.spar_grayflowlist)
+        save_list(self.save_spargraybest_name,self.spar_graybestlist)
+        save_list(self.save_spargraygt_name,self.spar_graygtlist)
+
+        print('OUTPUT TXTS: %s,%s,%s,%s,%s,%s IN '%\
+              (self.sparplot_txtname,self.spardata_txtname,self.sparbest_txtname,
+               self.spargrayflow_txtname,self.spargraybest_txtname,self.spargraygt_txtname) + \
+              ('current folder' if len(self.txt_save_path)==0 else self.txt_save_path))
 
 
 
@@ -281,7 +318,8 @@ class EasyTest(object):
         print ('\n'.join(['%-20s:%-20s' % item for item in self.__dict__.items() \
                           if item[0] is not 'imgA' and \
                              item[0] is not 'imgB' and \
-                             item[0] is not 'gtflow']))
+                             item[0] is not 'gtflow' and \
+                             'list' not in item[0]]))
         if(self.movedir != self.targetdir):print("WANNING: targetdir not equal to movedir !!")
         print('')
 

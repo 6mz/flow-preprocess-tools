@@ -6,11 +6,16 @@ from myflowlib import save_list
 import subprocess
 import os 
 
-def ask(something=''):
+def ask(something='',flag=0):
     ans=input(something+'\n'+'continue?[y/n]')
     while(not ('y' == ans or 'Y' == ans)):
-        if('N == ans' or 'n' == ans):
-            quit(0)
+        if('N' == ans or 'n' == ans):
+            if(1 == flag):
+                ans=input('quit?[y/n]')
+                if('y' == ans or 'Y' == ans):quit(0)
+                continue
+            else:
+                quit(0)
         ans=input('again?[y/n]')
     print('\n')
 
@@ -18,7 +23,7 @@ def ask(something=''):
 my_dir = os.path.dirname(os.path.realpath(__file__))
 os.chdir(my_dir) 
 
-test=EasyTest('/home/a/public1/flow/data/Sintel/training/',num=1)
+test=EasyTest('/home/a/public1/flow/data/Sintel/training/',num=10)
 #test.set_targetdir('./data/test1',warpdir='show')
 #test.set_movedir(A='show',B='show')
 test.set_targetdir('./data/test1',warpdir='show')
@@ -37,5 +42,7 @@ print('OUTPUT TXTS: commend.txt IN ' + test.txt_save_path)
 #subprocess.call(args)
 test.MovePics()
 test.print_all()
-print(" 由于python3不能调用python2,请在程序结束后手动复制%s目录下commend.txt里的内容到命令行运行PWC-Net\n " \
+print("由于python3不能调用python2,请在程序挂起期间手动复制%s目录下commend.txt里的内容到命令行运行PWC-Net\n " \
       % test.txt_save_path)
+
+ask('是否完成？',flag=1)
