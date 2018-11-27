@@ -23,8 +23,9 @@ def ask(something='',flag=0):
 my_dir = os.path.dirname(os.path.realpath(__file__))
 os.chdir(my_dir) 
 
-test=EasyTest('/home/a/public1/flow/data/Sintel/training/',num=5)
-test.set_dir('./data/test2')
+test=EasyTest('/home/a/public1/flow/data/flyingthings3d/',ltype='FlyingThings',ltype2='clean',num=20)
+
+test.set_dir('./data/test_flyingthings3d')
 test.set_targetdir(warpdir='show')
 test.set_movedir(Adir='show',Bdir='show')
 test.print_all()

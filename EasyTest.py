@@ -34,7 +34,7 @@ class EasyTest(object):
         self.set_movename(self.head,"A","B","gt")
         self.set_spar(20,"default")
         self.set_spardir("","sparplot","spardata",self.vizflowdir,"vizflow_gray","vizflow_gray","vizflow_gray")
-        self.set_sparname(self.head,"sp.jpg","sd.txt","f_viz_bestres.jpg","f_gviz_res.jpg","f_gviz_bestres.jpg","f_gviz_gt.jpg")
+        self.set_sparname(self.head,"sp.jpg","sd.txt","f_viz_resbest.jpg","f_gviz_res.jpg","f_gviz_resbest.jpg","f_gviz_gt.jpg")
         self.init_Randomlist()
 
     def init_Randomlist(self):
@@ -49,6 +49,7 @@ class EasyTest(object):
             self.imgA = res[0]
             self.imgB = res[1]
             self.gtflow = res[2]
+        self.datalen=len(imgA)
 
     def init_dir(self,dirs):
         self.dir = dirs
@@ -254,13 +255,16 @@ class EasyTest(object):
     def GenerateSparplots(self):
         flowlist = self.outlist
         gtflowlist = self.gtflow
+        self.aepes=[]
         for i,flowname in enumerate(flowlist):
             n,e = splitext(flowname)
             resflowname = n + '_res' + e
             flow = read_gen(flowname)
             resflow = read_gen(resflowname)
             gtflow = read_gen(gtflowlist[i])
-            self.SparplotSimple(i,flow,resflow,gtflow)
+            _,_,_,aepe0=self.SparplotSimple(i,flow,resflow,gtflow)
+            self.aepes.append(aepe0)
+        print("整个数据集抽样平均AEPE: ",np.mean(self.aepes))
 
     def SparplotSimple(self,ids,netout_flow,uncertainty_flow,groundtruth_flow):
 
@@ -288,7 +292,7 @@ class EasyTest(object):
             aepe=EPE_usingmask(flow,gt,res<threshold)
             res_aepe.append(aepe)
             res_threshold.append(threshold)
-            print( u"\r已完成 "+str(int(len(res_aepe)/total_steps*50))+'%',end = '')
+            print( u"\rFinish"+str(int(len(res_aepe)/total_steps*50))+'%',end = '')
 
         best_aepe=[]
         best_threshold=[]
@@ -298,7 +302,7 @@ class EasyTest(object):
             aepe=EPE_usingmask(flow,gt,best<threshold)
             best_aepe.append(aepe)
             best_threshold.append(threshold)
-            print( u"\r已完成"+str(int(len(best_aepe)/total_steps*50+50))+'%',end = '')
+            print( u"\rFinish"+str(int(len(best_aepe)/total_steps*50+50))+'%',end = '')
 
         x=(totalpixels-remainpixels)/totalpixels
         y1=res_aepe/aepe0
@@ -337,6 +341,7 @@ class EasyTest(object):
                              item[0] is not 'gtflow' and \
                              'list' not in item[0]]))
         if('./data/yourdir' == self.dir):print("WANNING: not set dir !!")
+        if(True == self.isempty):print("WANNING: Not find any files !!")
         
         print('')
 
