@@ -24,7 +24,7 @@ class EasyTest(object):
         self.num = num
         self.init_dir(dirs)
 
-        self.set_txtpath("./txts")
+        self.set_txtpath("txts")
         self.set_txtname("img1.txt", "img2.txt", "groundtruth.txt", "out.txt", "viz.txt", "warp.txt")
         self.set_txtsparname("sparplot.txt","spardatalist.txt","sparbest.txt","spargrayres.txt",\
                              "spargraybest.txt","spargraygt.txt")
@@ -44,27 +44,39 @@ class EasyTest(object):
             self.imgA = []
             self.imgB = []
             self.gtflow = []
+            self.datasample_len= 0
+            self.datasets_len = 0
         else:
             self.isempty = False
             self.imgA = res[0]
             self.imgB = res[1]
             self.gtflow = res[2]
-        self.datalen=len(imgA)
+            self.datasample_len=len(self.imgA)
+            self.datasets_len = res[3]
+
 
     def init_dir(self,dirs):
         self.dir = dirs
         self.targetdir = dirs
         self.movedir = dirs
         self.spar_dir = dirs
+        self.txt_save_path_short = True
 
-    def set_txtpath(self,txt_save_path = '' ):
-        self.txt_save_path = txt_save_path
+    def set_txtpath(self,txt_path = '',in_dir = True ):
+        if(in_dir):
+            self.txt_save_path_short = txt_path
+            self.txt_save_path = join(self.dir,txt_path)
+        else:
+            self.txt_save_path_short = False
+            self.txt_save_path = txt_path
 
     def set_dir(self,dirs):
             self.dir = dirs
             self.targetdir = join(self.dir,self.targetdir_short)
             self.movedir = join(self.dir,self.movedir_short)
             self.spar_dir = join(self.dir,self.spar_dir_short)
+            if(False != self.txt_save_path_short):
+                self.txt_save_path = join(self.dir,self.txt_save_path_short)
 
     def set_txtname(self,img1=None,img2=None,gt=None,out=None,viz=None,warp=None):
         img1,img2,gt,out,viz,warp = endcheck('.txt',img1,img2,gt,out,viz,warp)
@@ -143,19 +155,19 @@ class EasyTest(object):
         if(graybestend):self.spar_graybestend = graybestend
         if(graygtend):self.spar_graygtend = graygtend
 
-    def Generatelist(self):
-        self.GenerateRandomlist()
+    def Generatelist(self,gen_spar=True):
+        self.GenerateRandomlist(gen_spar)
         self.GenerateOutVizWarplist()
-        self.GenerateSparlist()
+        if(gen_spar):self.GenerateSparlist()
 
-    def GenerateRandomlist(self):
+    def GenerateRandomlist(self,gt=True):
         print('saving list..')
         self.save_img1_name = join(self.txt_save_path, self.img1_txtname)
         self.save_img2_name = join(self.txt_save_path, self.img2_txtname)
         self.save_gtflow_name = join(self.txt_save_path, self.groundtruth_txtname)
         save_list(self.save_img1_name,self.imgA)
         save_list(self.save_img2_name,self.imgB)
-        save_list(self.save_gtflow_name,self.gtflow)
+        if(gt):save_list(self.save_gtflow_name,self.gtflow)
         print('OUTPUT TXTS: %s,%s,%s IN '%(self.img1_txtname,self.img2_txtname,self.groundtruth_txtname) + \
           ('current folder' if len(self.txt_save_path)==0 else self.txt_save_path))
 
@@ -208,8 +220,6 @@ class EasyTest(object):
                self.spargrayres_txtname,self.spargraybest_txtname,self.spargraygt_txtname) + \
               ('current folder' if len(self.txt_save_path)==0 else self.txt_save_path))
 
-
-
     def MovePics(self,A=True,B=True,gt=True):
         assert(self.num == len(self.imgA) == len(self.imgB))
         if(gt):assert self.num == len(self.gtflow)
@@ -226,7 +236,7 @@ class EasyTest(object):
                     print('MOVE  ' + item + '  TO  ' + destination + '  SUCCESS!')
                 else:
                     print('MOVE  ' + item + '  FAIL!')
-        print('')
+            print('')
         if(B):
             for i,item in enumerate(self.imgB):
                 source = item
@@ -238,7 +248,7 @@ class EasyTest(object):
                     print('MOVE  ' + item + '  TO  ' + destination + '  SUCCESS!')
                 else:
                     print('MOVE  ' + item + '  FAIL!')
-        print('')
+            print('')
         if(gt):
             for i,item in enumerate(self.gtflow):
                 source = item
@@ -250,7 +260,7 @@ class EasyTest(object):
                     print('MOVE  ' + item + '  TO  ' + destination + '  SUCCESS!')
                 else:
                     print('MOVE  ' + item + '  FAIL!')
-        print('')
+            print('')
 
     def GenerateSparplots(self):
         flowlist = self.outlist

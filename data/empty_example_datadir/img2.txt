@@ -1,5 +1,0 @@
-/home/a/public1/flow/data/Sintel/training/clean/alley_2/frame_0002.png
-/home/a/public1/flow/data/Sintel/training/clean/bamboo_2/frame_0028.png
-/home/a/public1/flow/data/Sintel/training/clean/sleeping_1/frame_0044.png
-/home/a/public1/flow/data/Sintel/training/clean/market_5/frame_0031.png
-/home/a/public1/flow/data/Sintel/training/clean/sleeping_2/frame_0024.png

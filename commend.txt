@@ -1,0 +1,1 @@
+python ./proc_images.py ./data/test3/txts/img1.txt ./data/test3/txts/img2.txt ./data/test3/txts/out.txt ./data/test3/txts/viz.txt ./data/test3/txts/warp.txt

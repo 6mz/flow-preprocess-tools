@@ -1,0 +1,20 @@
+#在data文件夹下复制一份empty_example_datadir文件夹，重命名为你想要的
+#修改TESTEasyTest.py里的
+#datasets_path, ltype(数据库类型，如Sintel), ltype2（部分数据库的分叉，如clean）, num 和
+#dirs（刚刚创建的文件夹的路径，用于保存结果）
+
+#TESTEasyTest只能在python3下运行
+source activate lmz3
+python TESTEasyTest.py
+
+#按提示运行完成后，python2下：
+python commend.py
+
+
+#数据库路径
+#Sintel:	/home/a/public1/flow/data/Sintel/training/
+#clean/final
+#FlyingChairs:	/home/a/public1/flow/data/FlyingChairs_release/data/
+#FlyingThings:	/home/a/public1/flow/data/flyingthings3d/
+#clean/final
+#Real:		/home/a/public1/flow/data/test/real20181127/pic/

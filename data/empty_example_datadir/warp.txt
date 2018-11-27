@@ -1,5 +1,0 @@
-./data/test1/show/t0A_forward.jpg
-./data/test1/show/t1A_forward.jpg
-./data/test1/show/t2A_forward.jpg
-./data/test1/show/t3A_forward.jpg
-./data/test1/show/t4A_forward.jpg

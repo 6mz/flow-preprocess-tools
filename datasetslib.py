@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from os.path import *
 from glob import glob
+from PIL import Image 
 import random
 
 def Randomlist(list_path,item_num = 10,ltype = 'Sintel',ltype2 = 'clean',lister  = None):
@@ -23,6 +24,9 @@ def Randomlist(list_path,item_num = 10,ltype = 'Sintel',ltype2 = 'clean',lister 
             if('final' == ltype2):
                 print('setting datasets_lister: FlyingThingsFinal_list ...')
                 datasets_lister = FlyingThingsFinal_list(list_path)
+        elif('Real' == ltype):
+            print('setting datasets_lister: Real_list ...')
+            datasets_lister = Real_list(list_path, ltype2)
 
     if(None == datasets_lister ):
         print('nWANNING : datasets not found\n')
@@ -42,8 +46,7 @@ def Randomlist(list_path,item_num = 10,ltype = 'Sintel',ltype2 = 'clean',lister 
         img2s.append(group[1])
         gtflows.append(group[2])
 
-    return (img1s,img2s,gtflows)
-
+    return (img1s,img2s,gtflows,len(datasets_lister))
 
 # ==================================== Sintel ==============================================
 
@@ -183,4 +186,36 @@ class FlyingThingsClean_list(FlyingThings_list):
 class FlyingThingsFinal_list(FlyingThings_list):
     def __init__(self, root ,dstype = 'frames_finalpass'):
         super(FlyingThingsFinal_list, self).__init__(root = root, dstype = 'frames_finalpass')
+
+# ==============================================================================================
+
+class Real_list(object):
+    def __init__(self, root = '', dstype = None ):
+        self.image_list = []
+        self.is_empty=False
+        image_dirs = sorted(glob(join(root, '*')))
+
+        for idir in image_dirs:
+            if( not isdir(idir)):continue
+            images = sorted( glob(join(idir, '*.jpg')) )
+            for i in range(len(images)-1):
+                self.image_list += [ [ images[i], images[i+1] ] ]
+
+        self.size = len(self.image_list)
+        if(len(self.image_list)<=0):
+            print('='*10 + '\nWANNING : Real_lister not find any files ,please check input dataset path!\n')
+            self.is_empty=True
+
+
+    def __getitem__(self, index):
+        index = index % self.size
+        img1 = self.image_list[index][0]
+        img2 = self.image_list[index][1]
+        flow = None
+        return (img1,img2,flow)
+
+
+    def __len__(self):
+        return self.size
+
 
