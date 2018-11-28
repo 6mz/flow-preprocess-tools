@@ -22,7 +22,7 @@ def zoom(imagelist,zoom=0.5):
 
 if '__main__' == __name__:
     root = '/home/a/public1/flow/data/test/real20181127/pic/'
-    scale = 0.5
+    scale = 1
     image_list = []
 
     image_dirs = sorted(glob(join(root, '*')))

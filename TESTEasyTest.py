@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+
+ # -*- coding: utf-8 -*-
 # 请在python3下启动本程序
 
 from EasyTest import EasyTest
@@ -39,7 +40,7 @@ def FullTest(datasets_path,ltype,ltype2,num,dirs):
     test.MovePics()
     test.print_all()
     
-    print("由于python3不能调用python2,请在程序挂起期间到python2环境下执行 commend.py 或手动复制%s目录下commend.txt里的内容运行PWC-Net\n " \
+    print("由于python3不能调用python2,请在程序挂起期间到python2环境下执行 commend.py 或 commend.txt 运行PWC-Net\n " \
           % test.txt_save_path)
     
     ask('是否完成？',flag=1)
@@ -68,7 +69,7 @@ def NogtTest(datasets_path,ltype,ltype2,num,dirs):
     test.print_all()
     print('INFO : No Groundtruth')
 
-    print("由于python3不能调用python2,请在程序结束后到python2环境下执行commend.py 或手动复制%s目录下commend.txt里的内容运行PWC-Net\n " \
+    print("由于python3不能调用python2,请在程序结束后到python2环境下执行commend.py 或 commend.txt 运行PWC-Net\n " \
           % test.txt_save_path)
 
 
@@ -80,7 +81,8 @@ if '__main__' == __name__:
     datasets_path='/home/a/public1/flow/data/test/real20181127/pic/'
     ltype = 'Real'
     ltype2 = None
-    num = 1
+    num = 50
     dirs = './data/test3'
 
     NogtTest(datasets_path,ltype,ltype2,num,dirs)
+    #FullTest(datasets_path,ltype,ltype2,num,dirs)#gt
