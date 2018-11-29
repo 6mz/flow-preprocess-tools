@@ -113,7 +113,7 @@ class point(object):
 
 if '__main__' == __name__:
     for i in range(0,1):
-        gtflow=draw_rect(i,root = './data')#'./data/TESTsimple2d/rect')
+        gtflow=draw_rect(i,root = './data/TESTsimple2d/rect')
 
 
 
