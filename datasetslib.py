@@ -27,6 +27,10 @@ def Randomlist(list_path,item_num = 10,ltype = 'Sintel',ltype2 = 'clean',lister 
         elif('Real' == ltype):
             print('setting datasets_lister: Real_list ...')
             datasets_lister = Real_list(list_path, ltype2)
+        elif('Simple2d' == ltype):
+            if('rect' == ltype2):
+                print('setting datasets_lister: Simple2drect_list ...')
+                datasets_lister = Simple2drect_list(list_path)
 
     if(None == datasets_lister ):
         print('nWANNING : datasets not found\n')
@@ -217,5 +221,40 @@ class Real_list(object):
 
     def __len__(self):
         return self.size
+
+
+# ===============================================================================
+class Simple2d_list(object):
+    def __init__(self, root = '', dstype = 'rect'):
+        self.flow_list = []
+        self.image_list = []
+        self.is_empty=False
+
+        imageA_list = sorted(glob(join(root, dstype, 'A/*.jpg')))
+        imageB_list = sorted(glob(join(root, dstype, 'B/*.jpg')))
+        self.flow_list = sorted(glob(join(root, dstype, 'gt/*.flo')))
+        self.image_list = list(zip(imageA_list,imageB_list))
+
+
+        assert len(self.image_list) == len(self.flow_list)
+        self.size = len(self.image_list)
+
+        if(len(self.image_list)<=0):
+            print('='*10 + '\nWANNING : FlyingThings_lister not find any files ,please check input dataset path!\n')
+            self.is_empty=True
+
+    def __getitem__(self, index):
+        index = index % self.size
+        img1 = self.image_list[index][0]
+        img2 = self.image_list[index][1]
+        flow = self.flow_list[index]
+        return (img1,img2,flow)
+
+    def __len__(self):
+        return self.size
+
+class Simple2drect_list(Simple2d_list):
+    def __init__(self, root ,dstype = 'rect'):
+        super(Simple2drect_list, self).__init__(root = root, dstype = 'rect')
 
 

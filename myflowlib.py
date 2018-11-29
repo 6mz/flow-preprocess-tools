@@ -32,7 +32,6 @@ def flow_read_(filename):
     Original code by Deqing Sun, adapted from Daniel Scharstein.
     """
     TAG_FLOAT = 202021.25
-    TAG_CHAR = 'PIEH'
     f = open(filename,'rb')
     check = np.fromfile(f,dtype=np.float32,count=1)[0]
     assert check == TAG_FLOAT, ' flow_read:: Wrong tag in flow file (should be: {0}, is: {1}). Big-endian machine? '.format(TAG_FLOAT,check)
@@ -109,6 +108,36 @@ def read_gen(file_name):
     return []
 
 
+def flow_write(filename,uv,v=None):
+    """ Write optical flow to file.
+    
+    If v is None, uv is assumed to contain both u and v channels,
+    stacked in depth.
+    Original code by Deqing Sun, adapted from Daniel Scharstein.
+    """
+    nBands = 2
+
+    if v is None:
+        assert(uv.ndim == 3)
+        assert(uv.shape[2] == 2)
+        u = uv[:,:,0]
+        v = uv[:,:,1]
+    else:
+        u = uv
+
+    assert(u.shape == v.shape)
+    height,width = u.shape
+    f = open(filename,'wb')
+    TAG_CHAR = b'PIEH'
+    f.write(TAG_CHAR)
+    np.array(width).astype(np.int32).tofile(f)
+    np.array(height).astype(np.int32).tofile(f)
+    # arrange into matrix form
+    tmp = np.zeros((height, width*nBands))
+    tmp[:,np.arange(width)*2] = u
+    tmp[:,np.arange(width)*2 + 1] = v
+    tmp.astype(np.float32).tofile(f)
+    f.close()
 
 #%%====================================================================
 def save_list(fname,listname):
@@ -129,6 +158,9 @@ def read_list(fname):
 
 
 #%%====================================================================
+def viz_flow_fromfile(flow,logscale=True,scaledown=6,output=False):
+    return viz_flow_(flow[0,:,:],flow[1,:,:],logscale=logscale,scaledown=scaledown,output=output)
+
 def viz_flow(flow,logscale=True,scaledown=6,output=False):
     return viz_flow_(flow[:,:,0],flow[:,:,1],logscale=logscale,scaledown=scaledown,output=output)
 

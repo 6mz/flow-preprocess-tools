@@ -40,8 +40,7 @@ def FullTest(datasets_path,ltype,ltype2,num,dirs):
     test.MovePics()
     test.print_all()
     
-    print("由于python3不能调用python2,请在程序挂起期间到python2环境下执行 commend.py 或 commend.txt 运行PWC-Net\n " \
-          % test.txt_save_path)
+    print("由于python3不能调用python2,请在程序挂起期间到python2环境下执行 commend.py 或 commend.txt 运行PWC-Net\n ")
     
     ask('是否完成？',flag=1)
     test.GenerateSparplots()
@@ -69,8 +68,7 @@ def NogtTest(datasets_path,ltype,ltype2,num,dirs):
     test.print_all()
     print('INFO : No Groundtruth')
 
-    print("由于python3不能调用python2,请在程序结束后到python2环境下执行commend.py 或 commend.txt 运行PWC-Net\n " \
-          % test.txt_save_path)
+    print("由于python3不能调用python2,请在程序结束后到python2环境下执行commend.py 或 commend.txt 运行PWC-Net\n ")
 
 
 
@@ -78,11 +76,11 @@ if '__main__' == __name__:
     my_dir = os.path.dirname(os.path.realpath(__file__))
     os.chdir(my_dir) 
 
-    datasets_path='/home/a/public1/flow/data/test/real20181127/pic/'
-    ltype = 'Real'
-    ltype2 = None
+    datasets_path='/home/a/public1/flow/data/Simple2d/'
+    ltype = 'Simple2d'
+    ltype2 = 'rect'
     num = 50
-    dirs = './data/test3'
+    dirs = './data/test_simple2d_rect'
 
-    NogtTest(datasets_path,ltype,ltype2,num,dirs)
-    #FullTest(datasets_path,ltype,ltype2,num,dirs)#gt
+    #NogtTest(datasets_path,ltype,ltype2,num,dirs)
+    FullTest(datasets_path,ltype,ltype2,num,dirs)#gt
