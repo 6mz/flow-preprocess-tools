@@ -5,7 +5,9 @@ import random
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
+import sys
 
+sys.path.append("../Server_EasyTest")
 from myflowlib import viz_flow,flow_write,flow_read,viz_flow_fromfile
 
 def draw_rect_and_save(ids,root=''):
@@ -112,3 +114,7 @@ class point(object):
         return self.x < other.x and self.y < other.y
     def __gt__(self,other):
         return self.x > other.x and self.y > other.y
+
+if '__main__' == __name__:
+    for i in range(0,1):
+        gtflow=draw_rect_and_save(i,root = '../data/TESTsimple2d/rect_v2')

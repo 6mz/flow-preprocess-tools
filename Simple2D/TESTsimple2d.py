@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from simple2d import draw_rect_and_save
 
-if '__main__' == __name__:
-    for i in range(0,100):
-        gtflow=draw_rect_and_save(i,root = './data/TESTsimple2d/rect_v2')
+
 
 
 #    #绘制直线
