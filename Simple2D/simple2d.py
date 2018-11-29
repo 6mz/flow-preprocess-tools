@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Nov 27 20:57:14 2018
-
-@author: Administrator
-"""
-
 import os.path
 import numpy as np
 import random
@@ -14,12 +8,12 @@ from PIL import ImageFont
 
 from myflowlib import viz_flow,flow_write,flow_read,viz_flow_fromfile
 
-def draw_rect(ids,root=''):
+def draw_rect_and_save(ids,root=''):
     backsize = np.array([640 ,480])#(x,y)
     rectsize_min =  np.array([50,50])#(x,y)
     rectsize_max =  np.array([200,200])#(x,y)
 
-    backarray = background(backsize)
+    backarray = background_c(backsize)
     rectsize = randrectsize(rectsize_min,rectsize_max)
     pos1 = randpos(backsize,rectsize)
     pos2 = randpos(backsize,rectsize)
@@ -52,8 +46,6 @@ def draw_rect(ids,root=''):
 #    image.save(os.path.join(root,'gt_viz',str(ids)+'gt_fromfile.jpg'))
 #    return flow
 
-
-
 def randrectsize(minsize,maxsize):
     assert True == (minsize < maxsize).all()
     return np.array([random.randint(minsize[0],maxsize[0]),random.randint(minsize[1],maxsize[1])])
@@ -63,6 +55,16 @@ def randpos(backsize,rectsize):
     minpt = np.array([0,0])
     maxpt = backsize - rectsize
     return point(random.randint(minpt[0],maxpt[0]),random.randint(minpt[1],maxpt[1]))
+
+def background_c(backsize):
+    # x,y -> i,j
+    array = np.zeros((backsize[1], backsize[0], 3), np.uint8)
+    color = np.linspace(0,255,backsize[0])
+    color = np.vstack((color for _ in range(backsize[1])))
+    array[:, :, 0] = color
+    array[:, :, 1] = color
+    array[:, :, 2] = color
+    return array
 
 def background(backsize,color = [255,255,0]):
     # x,y -> i,j
@@ -110,34 +112,3 @@ class point(object):
         return self.x < other.x and self.y < other.y
     def __gt__(self,other):
         return self.x > other.x and self.y > other.y
-
-if '__main__' == __name__:
-    for i in range(0,1):
-        gtflow=draw_rect(i,root = './data/TESTsimple2d/rect')
-
-
-
-
-#    #绘制直线
-#    draw.line((20, 20, 150, 150), 'cyan')
-#    #绘制弧
-#    draw.arc((100, 200, 300, 400), 0, 180, 'yellow')
-#    draw.arc((100, 200, 300, 400), -90, 0, 'green')
-# 
-#    #绘制弦
-#    draw.chord((350, 50, 500, 200), 0, 120, 'khaki', 'orange')
-# 
-#    #绘制圆饼图
-#    draw.pieslice((350, 50, 500, 200), -150, -30, 'pink', 'crimson')
-#    
-#    #绘制椭圆
-#    draw.ellipse((350, 300, 500, 400), 'yellowgreen', 'wheat')
-#    #外切矩形为正方形时椭圆即为圆
-#    draw.ellipse((550, 50, 600, 100), 'seagreen', 'skyblue') 
-# 
-#    #绘制多边形
-#    draw.polygon((150, 180, 200, 180, 250, 120, 230, 90, 130, 100), 'olive', 'hotpink')
-# 
-#    #绘制文本
-#    font = ImageFont.truetype("consola.ttf", 40, encoding="unic")#设置字体
-#    draw.text((100, 50), u'Hello World', 'fuchsia', font)

@@ -4,7 +4,7 @@ from glob import glob
 from PIL import Image 
 import random
 
-def Randomlist(list_path,item_num = 10,ltype = 'Sintel',ltype2 = 'clean',lister  = None):
+def Randomlist(list_path,item_num = 10,ltype = 'Sintel',ltype2 = 'clean',lister  = None ,rep = False):
     datasets_lister = lister
     if(not datasets_lister):
         if('Sintel' == ltype):
@@ -28,9 +28,8 @@ def Randomlist(list_path,item_num = 10,ltype = 'Sintel',ltype2 = 'clean',lister 
             print('setting datasets_lister: Real_list ...')
             datasets_lister = Real_list(list_path, ltype2)
         elif('Simple2d' == ltype):
-            if('rect' == ltype2):
-                print('setting datasets_lister: Simple2drect_list ...')
-                datasets_lister = Simple2drect_list(list_path)
+            print('setting datasets_lister: Simple2d_list( ltype2 = '+ltype2+')...')
+            datasets_lister = Simple2d_list(list_path,ltype2)
 
     if(None == datasets_lister ):
         print('nWANNING : datasets not found\n')
@@ -43,9 +42,14 @@ def Randomlist(list_path,item_num = 10,ltype = 'Sintel',ltype2 = 'clean',lister 
     img1s=[]
     img2s=[]
     gtflows=[]
+    if(len(datasets_lister) < item_num):
+        rep = True
     for i in range(item_num):
         item_id = random.randint(0,len(datasets_lister)-1)
         group = datasets_lister[item_id]
+        while((not rep) and (group[0] in img1s)):
+            item_id = random.randint(0,len(datasets_lister)-1)
+            group = datasets_lister[item_id]
         img1s.append(group[0])
         img2s.append(group[1])
         gtflows.append(group[2])
@@ -253,8 +257,6 @@ class Simple2d_list(object):
     def __len__(self):
         return self.size
 
-class Simple2drect_list(Simple2d_list):
-    def __init__(self, root ,dstype = 'rect'):
-        super(Simple2drect_list, self).__init__(root = root, dstype = 'rect')
+
 
 
