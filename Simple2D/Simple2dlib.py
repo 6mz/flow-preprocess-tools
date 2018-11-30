@@ -274,7 +274,6 @@ class RectDatasets(object):
         self.gtFlowArray = ImposeRect(self.gtFlowArray,movArray,posA)
 
     def AddRect(self,times=1):
-        self._AddBackgroundColor()
         for _ in range(times):
             self._GenRandRect()
             self._GenRangePoints()
@@ -298,8 +297,10 @@ class RectDatasets(object):
     def OutPutDatasets(self,path,rectNum,fileNum):
         self.setSavePath(path)
         for i in range(fileNum):
+            self._AddBackgroundColor()
             self.AddRect(rectNum)
             self.Save(i)
+            self.InitBackground()
 
 def show(datasetGenerator):
     imA = Image.fromarray(datasetGenerator.imA_Array)
