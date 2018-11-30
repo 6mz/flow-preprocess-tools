@@ -21,12 +21,11 @@ def open_flo_file(filename):
         # Reshape data into 3D array (columns, rows, bands)
         return np.resize(data, (h[0], w[0], 2))
 
+#def flow_read(filename):
+#    u,v = flow_read_(filename)
+#    return np.array([u,v])
 
 def flow_read(filename):
-    u,v = flow_read_(filename)
-    return np.array([u,v])
-
-def flow_read_(filename):
     """ Read optical flow from file, return (U,V) tuple. 
     
     Original code by Deqing Sun, adapted from Daniel Scharstein.

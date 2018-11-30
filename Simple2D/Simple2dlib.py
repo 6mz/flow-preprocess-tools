@@ -8,7 +8,7 @@ from PIL import ImageFont
 import sys
 
 sys.path.append("../Server_EasyTest")
-from myflowlib import viz_flow,flow_write,flow_read,viz_flow_fromfile
+from myflowlib import viz_flow,flow_write,open_flo_file
 from Point import point
 
 #def draw_rect_and_save(ids,root=''):
@@ -53,18 +53,6 @@ from Point import point
 #    assert True == (minsize < maxsize).all()
 #    return np.array([random.randint(minsize[0],maxsize[0]),random.randint(minsize[1],maxsize[1])])
 #
-
-#
-#def background_c(backsize):
-#    # x,y -> i,j
-#    array = np.zeros((backsize[1], backsize[0], 3), np.uint8)
-#    color = np.linspace(0,255,backsize[0])
-#    color = np.vstack((color for _ in range(backsize[1])))
-#    array[:, :, 0] = color
-#    array[:, :, 1] = color
-#    array[:, :, 2] = color
-#    return array
-#
 def Rect1(rectSize,dtype =  np.uint8):
     # x,y -> i,j
     array = np.zeros((rectSize[1], rectSize[0]),dtype)
@@ -94,14 +82,23 @@ def ij2xy(ij):
 def xy2ij(xy):
     return np.array([xy[1],xy[0]],dtype=np.int)
 
-def arr(lists):
-    return np.array(lists)
+def arr(lists,do = None):
+    if(None == do):
+        return np.array(lists)
+    else:
+        return np.array([lists,do])
 
-def arri(lists):
-    return np.array(lists,dtype=np.int)
+def arri(lists,do = None):
+    if(None == do):
+        return np.array(lists,dtype=np.int)
+    else:
+        return np.array([lists,do],dtype=np.int)
 
-def arrf(lists):
-    return np.array(lists,dtype=np.float)
+def arrf(lists,do = None):
+    if(None == do):
+        return np.array(lists,dtype=np.float)
+    else:
+        return np.array([lists,do],dtype=np.float)
 
 def ImposeRect(backgroundArray,rectArray,posPoint):
     newArray = backgroundArray.copy()
@@ -124,9 +121,18 @@ def ImposeRect(backgroundArray,rectArray,posPoint):
     if len(backgroundArray.shape) == 2:
         backgroundArray[pos_i:posDia_i, pos_j:posDia_j] = rectArray
     else:
-        for ii in range(backgroundArray.shape[2]):
+        for ii in range(rectArray.shape[2]):
             newArray[posPoint.i:posPoint_dia.i, posPoint.j:posPoint_dia.j, ii] = rectArray[:,:,ii]
     return newArray
+
+def RectAddColorArray(rectArray,colorArray):
+    assert(rectArray.shape[0:2] == colorArray.shape[0:2])
+    return ImposeRect(rectArray,colorArray,posPoint=point(0,0))
+
+def RectAddColor(rectArray,color):
+    for i in range(rectArray.shape[2]):
+        rectArray[:,:,i] = color[i]
+    return rectArray
 
 def RandPos(rangePoint1,rangePoint2):
     assert type(rangePoint1) == type(rangePoint2) 
@@ -142,7 +148,6 @@ def RandSize(range1,range2):
     maxy = np.max([range1[1],range2[1]])
     miny = np.min([range1[1],range2[1]])
     return arr([random.randint(minx,maxx),random.randint(miny,maxy)])
-
 
 def RandMov(posA,minMovDis,maxMovDis,rangePoint1,rangePoint2):
     minmx = minMovDis[0]
@@ -167,17 +172,49 @@ def RandMov(posA,minMovDis,maxMovDis,rangePoint1,rangePoint2):
         if(minx<Bx<maxx and miny<By<maxy):break
     return point(Bx,By),arr([movex,movey])
 
+def RandColor():
+    r = random.randint(0,255) 
+    g = random.randint(0,255) 
+    b = random.randint(0,255) 
+    return [r,g,b]
+
+def RandColorArray(rectSize):
+    colorArray = Rect3(rectSize)
+    for i in range(3):
+        colorArray[:,:,i] = np.random.randint(0,256,size=xy2ij(rectSize))#np.random not include 256
+    return colorArray
+
+def RandColorArray_2(rectSize):
+    # x,y -> i,j
+    array = np.zeros((rectSize[1], rectSize[0], 3), np.uint8)
+    channel = np.random.randint(0,2,size=3)#np.random not include 2
+    channel[0] = [1,channel[0]][channel.any()]
+    if random.randint(0,1):
+        color = np.linspace(0,255,rectSize[0])
+        color = np.vstack((color for _ in range(rectSize[1])))
+    else:
+        color = np.linspace(0,255,rectSize[1])
+        color = np.vstack((color for _ in range(rectSize[0])))
+        color = color.T
+    array[:, :, 0] = color * channel[0]
+    array[:, :, 1] = color * channel[1]
+    array[:, :, 2] = color * channel[2]
+    return array
 
 class RectDatasets(object):
     def __init__(self,backGroundSize,backGroundColor = [255,255,255]):
         self.backGroundSize = backGroundSize
         self.backGroundColor = backGroundColor
-        self.imA_Array = Rect3(backGroundSize,backGroundColor)
-        self.imB_Array = Rect3(backGroundSize,backGroundColor)
-        self.gtFlowArray = Rect2f(backGroundSize)
+        self.InitBackground()
         self.setMovDis(arr([0,0]),arr([50,50]))
-        self.setRectSize(arr([20,20]),arr([200,200]))
+        self.setRectSize(arr([20,20]),arr([50,50]))
         self.setRangeMode(0)
+        self.setRectColorMode(0)
+
+    def InitBackground(self):
+        self.imA_Array = Rect3(self.backGroundSize,self.backGroundColor)
+        self.imB_Array = Rect3(self.backGroundSize,self.backGroundColor)
+        self.gtFlowArray = Rect2f(self.backGroundSize)
 
     def setMovDis(self,minMovDis,maxMovDis):
         self.minMovDis = minMovDis
@@ -188,9 +225,25 @@ class RectDatasets(object):
         self.maxRectSize = maxRectSize
 
     def setRangeMode(self,rangeMode=0):
-        self.rangeMode=rangeMode
+        self.rangeMode = rangeMode
 
-    def _setRangePoints(self):
+    def setRectColorMode(self,rectColorMode=0):
+        self.rectColorMode = rectColorMode
+        #0:single color 1:random array
+
+    def setSavePath(self,rootPath = './Your datasets root path'):
+        self.rootPath = rootPath
+
+    def _AddBackgroundColor(self):
+        backgroundColorArray = RandColorArray_2(self.backGroundSize)
+        self.imA_Array = RectAddColorArray(self.imA_Array,backgroundColorArray)
+        self.imB_Array = RectAddColorArray(self.imB_Array,backgroundColorArray)
+
+    def _GenRandRect(self):
+        self.rectSize = RandSize(self.minRectSize,self.maxRectSize)
+        self.rectArray = Rect3(self.rectSize)
+
+    def _GenRangePoints(self):
         if(0==self.rangeMode):
             self.rangePointA1 = point(1,1)
             self.rangePointA2 = point(self.backGroundSize-self.rectSize-1)
@@ -198,31 +251,66 @@ class RectDatasets(object):
             self.rangePointA1 = point(-self.rectSize)
             self.rangePointA2 = point(self.backGroundSize)
 
+    def _AddRandColorToRect(self):
+        if   0 == self.rectColorMode:
+            rectColor = RandColor()
+            self.rectArray = RectAddColor(self.rectArray ,rectColor)
+        elif 1 == self.rectColorMode:
+            rectColorArray = RandColorArray(self.rectSize)
+            self.rectArray = RectAddColorArray(self.rectArray ,rectColorArray )
+        elif 2 == self.rectColorMode:
+            rectColor = RandColor()
+            rectColorArray = RandColorArray(self.rectSize - arr(4,4))
+            self.rectArray = RectAddColor(self.rectArray ,rectColor)
+            self.rectArray = ImposeRect(self.rectArray ,rectColorArray, point(2,2))
+
     def _AddRect(self):
         posA = RandPos(self.rangePointA1,self.rangePointA2)
         posB,movDis = RandMov(posA,self.minMovDis,self.maxMovDis,self.rangePointA1,self.rangePointA2)
-        rectArray = Rect3(self.rectSize,[0,255,255])
         movArray = Rect2f(self.rectSize)
         movArray[:,:,:] = movDis
-        self.imA_Array = ImposeRect(self.imA_Array,rectArray,posA)
-        self.imB_Array = ImposeRect(self.imB_Array,rectArray,posB)
+        self.imA_Array = ImposeRect(self.imA_Array,self.rectArray,posA)
+        self.imB_Array = ImposeRect(self.imB_Array,self.rectArray,posB)
         self.gtFlowArray = ImposeRect(self.gtFlowArray,movArray,posA)
-    
-    def _setRandRectSize(self):
-        self.rectSize = RandSize(self.minRectSize,self.maxRectSize)
 
     def AddRect(self,times=1):
+        self._AddBackgroundColor()
         for _ in range(times):
-            self._setRandRectSize()
-            self._setRangePoints()
+            self._GenRandRect()
+            self._GenRangePoints()
+            self._AddRandColorToRect()
             self._AddRect()
+
+    def GenImg(self):
+        self.imA = Image.fromarray(self.imA_Array)
+        self.imB = Image.fromarray(self.imB_Array)
+        gtArray = Rect3(ij2xy(self.gtFlowArray.shape[0:2]))
+        self.gt = Image.fromarray(RectAddColorArray(gtArray,self.gtFlowArray))
+
+    def Save(self,ids,rootPath = None):
+        self.GenImg()
+        if(None == rootPath):rootPath=self.rootPath
+        self.imA.save(os.path.join(rootPath,'A',str(ids)+'A.png'))
+        self.imB.save(os.path.join(rootPath,'B',str(ids)+'B.png'))
+        flow_write(os.path.join(rootPath,'gt',str(ids)+'gt.flo'),self.gtFlowArray)
+        if(0):self.gt.save(os.path.join(rootPath,'gt_viz',str(ids)+'gt.jpg'))
+
+    def OutPutDatasets(self,path,rectNum,fileNum):
+        self.setSavePath(path)
+        for i in range(fileNum):
+            self.AddRect(rectNum)
+            self.Save(i)
+
+def show(datasetGenerator):
+    imA = Image.fromarray(datasetGenerator.imA_Array)
+    imB = Image.fromarray(datasetGenerator.imB_Array)
+    gtFlowArray = datasetGenerator.gtFlowArray
+    gtArray = Rect3(ij2xy(gtFlowArray.shape[0:2]))
+    gt = Image.fromarray(RectAddColorArray(gtArray,gtFlowArray))
+    imA.show()
 
 backGroundSize = arr([640 ,480])#(x,y)
 datasetGenerator = RectDatasets(backGroundSize)
-datasetGenerator.setMovDis(arr([100,100]),arr([200,200]))
-datasetGenerator.AddRect(3)
-
-imA = Image.fromarray(datasetGenerator.imA_Array)
-imB = Image.fromarray(datasetGenerator.imB_Array)
-imA.show()
-imB.show()
+datasetGenerator.setMovDis(arr([1,1]),arr([50,50]))
+datasetGenerator.setRectColorMode(2)
+datasetGenerator.OutPutDatasets('../data/TESTsimple2d/rect_v3',5,50)
