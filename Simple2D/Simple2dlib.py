@@ -187,15 +187,18 @@ def RandColorArray(rectSize):
 def RandColorArray_2(rectSize):
     # x,y -> i,j
     array = np.zeros((rectSize[1], rectSize[0], 3), np.uint8)
-    channel = np.random.randint(0,2,size=3)#np.random not include 2
-    channel[0] = [1,channel[0]][channel.any()]
-    if random.randint(0,1):
-        color = np.linspace(0,255,rectSize[0])
-        color = np.vstack((color for _ in range(rectSize[1])))
-    else:
-        color = np.linspace(0,255,rectSize[1])
-        color = np.vstack((color for _ in range(rectSize[0])))
-        color = color.T
+    channel = np.random.randint(0,2,size=3)#np.random not include 2 (0,1)
+    dim = random.randint(0,2)#random include 2 (0,1,2)
+    channel[dim] = [1,channel[dim]][channel.any()]
+    color1 = np.linspace(0,255,rectSize[0])
+    color1 = np.vstack((color1 for _ in range(rectSize[1])))
+    color2 = np.linspace(0,255,rectSize[1])
+    color2 = np.vstack((color2 for _ in range(rectSize[0])))
+    color2 = color2.T
+    w = np.random.randint(0,2,size=2)
+    dim = random.randint(0,1)
+    w[dim] = [1,w[dim]][w.any()]
+    color = (w[0]*color1 + w[1]*color2)/np.sum(w)
     array[:, :, 0] = color * channel[0]
     array[:, :, 1] = color * channel[1]
     array[:, :, 2] = color * channel[2]
@@ -297,17 +300,18 @@ class RectDatasets(object):
     def OutPutDatasets(self,path,rectNum,fileNum):
         self.setSavePath(path)
         for i in range(fileNum):
+            self.InitBackground()
             self._AddBackgroundColor()
             self.AddRect(rectNum)
             self.Save(i)
-            self.InitBackground()
+
 
 def show(datasetGenerator):
     imA = Image.fromarray(datasetGenerator.imA_Array)
-    imB = Image.fromarray(datasetGenerator.imB_Array)
-    gtFlowArray = datasetGenerator.gtFlowArray
-    gtArray = Rect3(ij2xy(gtFlowArray.shape[0:2]))
-    gt = Image.fromarray(RectAddColorArray(gtArray,gtFlowArray))
+    #imB = Image.fromarray(datasetGenerator.imB_Array)
+    #gtFlowArray = datasetGenerator.gtFlowArray
+    #gtArray = Rect3(ij2xy(gtFlowArray.shape[0:2]))
+    #gt = Image.fromarray(RectAddColorArray(gtArray,gtFlowArray))
     imA.show()
 
 backGroundSize = arr([640 ,480])#(x,y)
