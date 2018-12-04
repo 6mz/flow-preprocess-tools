@@ -157,8 +157,8 @@ def read_list(fname):
 
 
 #%%====================================================================
-def viz_flow_fromfile(flow,logscale=True,scaledown=6,output=False):
-    return viz_flow_(flow[0,:,:],flow[1,:,:],logscale=logscale,scaledown=scaledown,output=output)
+#def viz_flow_fromfile(flow,logscale=True,scaledown=6,output=False):
+#    return viz_flow_(flow[0,:,:],flow[1,:,:],logscale=logscale,scaledown=scaledown,output=output)
 
 def viz_flow(flow,logscale=True,scaledown=6,output=False):
     return viz_flow_(flow[:,:,0],flow[:,:,1],logscale=logscale,scaledown=scaledown,output=output)

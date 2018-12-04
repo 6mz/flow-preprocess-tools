@@ -11,48 +11,6 @@ sys.path.append("../Server_EasyTest")
 from myflowlib import viz_flow,flow_write,open_flo_file
 from Point import point
 
-#def draw_rect_and_save(ids,root=''):
-#    backsize = np.array([640 ,480])#(x,y)
-#    rectsize_min =  np.array([50,50])#(x,y)
-#    rectsize_max =  np.array([200,200])#(x,y)
-#
-#    backarray = background_c(backsize)
-#    rectsize = randrectsize(rectsize_min,rectsize_max)
-#    pos1 = randpos(backsize,rectsize)
-#    pos2 = randpos(backsize,rectsize)
-#    while(pos1 == pos2):
-#        pos2 = randpos(backsize,rectsize)
-#    move = pos2 - pos1
-#    pos1_n = pos1 + rectsize
-#    pos2_n = pos2 + rectsize
-#
-#    image = Image.fromarray(backarray)
-#    draw = ImageDraw.Draw(image)
-#    draw.rectangle((pos1.x, pos1.y, pos1_n.x, pos1_n.y), 'red', 'red')
-#    image.save(os.path.join(root,'A',str(ids)+'A.jpg'))
-#
-#    image = Image.fromarray(backarray)
-#    draw = ImageDraw.Draw(image)
-#    draw.rectangle((pos2.x, pos2.y, pos2_n.x, pos2_n.y), 'red', 'red')
-#    image.save(os.path.join(root,'B',str(ids)+'B.jpg'))
-#
-#    gtflow = np.zeros((backsize[1],backsize[0],2),dtype='float')
-#    gtflow[pos1.i:pos1_n.i, pos1.j:pos1_n.j, 0] = move[0]
-#    gtflow[pos1.i:pos1_n.i, pos1.j:pos1_n.j, 1] = move[1]
-#    flow_write(os.path.join(root,'gt',str(ids)+'gt.flo'),gtflow)
-##    image = Image.fromarray(viz_flow(gtflow))
-##    image.save(os.path.join(root,'gt_viz',str(ids)+'gt.jpg'))
-#
-##    print(move)
-##    flow = flow_read(os.path.join(root,'gt',str(ids)+'gt.flow'))
-##    image = Image.fromarray(viz_flow_fromfile(flow))
-##    image.save(os.path.join(root,'gt_viz',str(ids)+'gt_fromfile.jpg'))
-##    return flow
-#
-#def randrectsize(minsize,maxsize):
-#    assert True == (minsize < maxsize).all()
-#    return np.array([random.randint(minsize[0],maxsize[0]),random.randint(minsize[1],maxsize[1])])
-#
 def Rect1(rectSize,dtype =  np.uint8):
     # x,y -> i,j
     array = np.zeros((rectSize[1], rectSize[0]),dtype)
