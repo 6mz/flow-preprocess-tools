@@ -323,7 +323,7 @@ def Sparplot(netout_flow,uncertainty_flow,groundtruth_flow,steps=50,\
     y2=best_aepe/aepe0
 
     if(is_plot):
-        plt.plot(x, y1, mec='r', mfc='w',label='Pred-Merged')
+        plt.plot(x, y1, mec='r', mfc='w',label='Our-Net')
         plt.plot(x, y2, ms=10,label='Oracle')
         plt.legend()  # 让图例生效
         plt.margins(0)
