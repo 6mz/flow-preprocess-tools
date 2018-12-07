@@ -87,9 +87,9 @@ def FindRepeat(fxy):
 
 
 path= 'E:\\GitProgram\\preprocess-tools\\data\\TEST datasetslib\\'
-gt_name = 't19f.flo'
-A_name = 't19A.jpg'
-B_name = 't19B.jpg'
+gt_name = 't0f.flo'
+A_name = 't0A.jpg'
+B_name = 't0B.jpg'
 
 gt_name = path + gt_name
 A_name =  path + A_name
@@ -107,8 +107,8 @@ A_warp2 = WarpNotEasy(A,gt)
 #Bimg = Image.fromarray(B)
 A_warpimg = Image.fromarray(A_warp)
 A_warp2img = Image.fromarray(A_warp2)
-A_warpimg.save(path+'t19A__oldwarp.jpg')
-A_warp2img.save(path+'t19A_newwarp.jpg')
+A_warpimg.save(path+'t0A__oldwarp.jpg')
+A_warp2img.save(path+'t0A_newwarp.jpg')
 ##gtimg.show()
 ##Aimg.show()
 ##Bimg.show()
