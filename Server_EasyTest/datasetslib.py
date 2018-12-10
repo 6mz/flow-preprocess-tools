@@ -27,6 +27,9 @@ def Randomlist(list_path,item_num = 10,ltype = 'Sintel',ltype2 = 'clean',lister 
         elif('Real' == ltype):
             print('setting datasets_lister: Real_list ...')
             datasets_lister = Real_list(list_path, ltype2)
+        elif('Real_pair' == ltype):
+            print('setting datasets_lister: Real_pair_list ...')
+            datasets_lister = Real_pair_list(list_path, ltype2)
         elif('Simple2d' == ltype):
             print('setting datasets_lister: Simple2d_list( ltype2 = '+ltype2+')...')
             datasets_lister = Simple2d_list(list_path,ltype2)
@@ -197,7 +200,7 @@ class FlyingThingsFinal_list(FlyingThings_list):
 
 # ==============================================================================================
 
-class Real_list(object):
+class Real_list(object):#for pics from videos 1,2,3,4,5
     def __init__(self, root = '', dstype = None ):
         self.image_list = []
         self.is_empty=False
@@ -227,6 +230,33 @@ class Real_list(object):
         return self.size
 
 
+
+class Real_pair_list(object):# for pair pics 1A,1B,2A,2B
+    def __init__(self, root = '', dstype = None ):
+        self.image_list = []
+        self.is_empty=False
+
+        imageA_list = sorted(glob(join(root, 'A/*.jpg')))
+        imageB_list = sorted(glob(join(root, 'B/*.jpg')))
+
+        self.image_list = list(zip(imageA_list,imageB_list))
+        self.size = len(self.image_list)
+
+        if(len(self.image_list)<=0):
+            print('='*10 + '\nWANNING : Real_pair_lister not find any files ,please check input dataset path!\n')
+            self.is_empty=True
+
+
+    def __getitem__(self, index):
+        index = index % self.size
+        img1 = self.image_list[index][0]
+        img2 = self.image_list[index][1]
+        flow = None
+        return (img1,img2,flow)
+
+
+    def __len__(self):
+        return self.size
 # ===============================================================================
 class Simple2d_list(object):
     def __init__(self, root = '', dstype = 'rect'):

@@ -89,7 +89,7 @@ class EasyTest(object):
                 bestFlowVizg = 'fvizg_rbest.jpg',gtFlowVizg = 'fvizg_gt.jpg')
         self.warpPics.set_valuesShortNames(
                 warp = 'A_forward.jpg',newWarp = 'A_Nforward',
-                warpOverlay = 'warpOverlay.jpg')
+                warpOverlay = 'wAB.jpg')
         self.spars.set_valuesShortNames(
                 sparData = 'sd.txt' ,sparPlot = 'sp.jpg')
 
@@ -144,6 +144,9 @@ class EasyTest(object):
 # ================== Genlist functions ============================
 
     def GenRawDataFromDatasets(self,datasets_path,ltype='Sintel',ltype2='clean',num = 10):
+        self.datasets_path = datasets_path
+        self.ltype = ltype
+        self.ltype2 = ltype2
         res = Randomlist(datasets_path, num, ltype, ltype2)
         if not res:
             self.isempty = True
@@ -156,6 +159,9 @@ class EasyTest(object):
             self.datasets_len = res[3]
 
     def GenRawDataFromDatasets_Nogt(self,datasets_path,ltype='Sintel',ltype2='clean',num = 10):
+        self.datasets_path = datasets_path
+        self.ltype = ltype
+        self.ltype2 = ltype2
         res = Randomlist(datasets_path, num, ltype, ltype2)
         if not res:
             self.isempty = True
@@ -166,6 +172,29 @@ class EasyTest(object):
             self.rawData.set_value(imgA=res[0] ,imgB=res[1])
             self.datasample_len=len(self.rawData['imgA'])
             self.datasets_len = res[3]
+
+    def ReadDataFromTxts(self,num = 10):
+        self.rawData.ReadAlltxts()
+        if(len(self.rawData)):
+            self.isempty = False
+            self.datasample_len=len(self.rawData['imgA'])
+            self.datasets_len = self.datasample_len
+        else:
+            self.isempty = True
+            self.datasample_len=0
+            self.datasets_len = 0
+
+    def ReadDataFromTxts_Nogt(self,num = 10):
+        self.rawData.Readtxts('imgA','imgB')
+        if(len(self.rawData)):
+            self.isempty = False
+            self.datasample_len=len(self.rawData['imgA'])
+            self.datasets_len = self.datasample_len
+        else:
+            self.isempty = True
+            self.datasample_len=0
+            self.datasets_len = 0
+
 
 # ================== other ===========================
 

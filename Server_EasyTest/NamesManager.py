@@ -172,23 +172,23 @@ class ListsManager(object):
                 self.txtFileNames[key] = ExtCheck(name,'.txt')
         return self.txtFileNames
 
-    def get_allSaveNames(self):
+    def get_allSavetxtNames(self):
         self.savetxtNames = dict()
         sdir = self.get_saveDir()
         for key,txt in self.get_txtFileNames().items():
             self.savetxtNames[key] = os.path.join(sdir,txt)
         return self.savetxtNames
 
-    def get_saveNamesLists(self,*keys):
-        saveNames = self.get_allSaveNames()
-        saveNamesLists = []
+    def get_SavetxtNamesLists(self,*keys):
+        SavetxtNames = self.get_allSavetxtNames()
+        SavetxtNamesLists = []
         for key in keys:
-            if key in saveNames:
-                saveNamesLists.append(saveNames[key])
+            if key in SavetxtNames:
+                SavetxtNamesLists.append(SavetxtNames[key])
             else:
-                print('WARRING get_saveNamesLists: '+
+                print('WARRING get_SavetxtNamesLists: '+
                       str(key)+' is not in the listdicts')
-        return saveNamesLists
+        return SavetxtNamesLists
 
     def __getitem__(self,key):
         if key in self.values:
@@ -250,10 +250,10 @@ class ListsManager(object):
 
     def _Savetxts(self,keys):
         print('Saveing   ' + ' , '.join([item[1] for item in self.txtFileNames.items()]))
-        saveNames = self.get_allSaveNames()
+        SavetxtNames = self.get_allSavetxtNames()
         for key in keys:
-            if key in saveNames:
-                save_list(saveNames[key],self.values[key])
+            if key in SavetxtNames:
+                save_list(SavetxtNames[key],self.values[key])
                 if(self.values[key]==[]):print("WARRING: List "+str(key)+' is empty')
             else:
                 print('WARRING _Savetxts: '+
@@ -269,11 +269,11 @@ class ListsManager(object):
 
     def _Readtxts(self,keys):
         print('Lording   ' + ' , '.join([item[1] for item in self.txtFileNames.items()]))
-        saveNames = self.get_allSaveNames()
+        SavetxtNames = self.get_allSavetxtNames()
         for key in keys:
-            if key in saveNames:
-                self.values[key] = read_list(saveNames[key])
-                if(self.values[key]==[]):print("WARRING: File "+str(saveNames[key])+' is empty')
+            if key in SavetxtNames:
+                self.values[key] = read_list(SavetxtNames[key])
+                if(self.values[key]==[]):print("WARRING: File "+str(SavetxtNames[key])+' is empty')
             else:
                 print('WARRING _Readtxts: '+
                       str(key)+' is not in the listdicts')

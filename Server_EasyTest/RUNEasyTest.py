@@ -39,6 +39,11 @@ def FullTest(datasets_path,ltype,ltype2,num):
     et.VizFlows(bestFlow='d')
     et.PrintAllInfo()
 
+def FullTest2(num):
+    et = EasyTest('./data/TESTNamesManager')
+    et.ReadDataFromTxts_Nogt(num)
+    et.PrintAllInfo()
+
 if '__main__' == __name__:
     my_dir = os.path.dirname(os.path.realpath(__file__))
     os.chdir(my_dir) 
@@ -49,4 +54,5 @@ if '__main__' == __name__:
     num = 10
 
     #NogtTest(datasets_path,ltype,ltype2,num)
-    FullTest(datasets_path,ltype,ltype2,num)#gt
+    #FullTest(datasets_path,ltype,ltype2,num)#gt
+    FullTest2(num)#gt
