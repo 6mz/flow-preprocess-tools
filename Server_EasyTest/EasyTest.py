@@ -199,10 +199,10 @@ class EasyTest(object):
 # ================== other ===========================
 
     def get_commendTxTNames(self):
-        rawDataList = self.rawData.get_saveNamesLists('imgA','imgB')
-        flowslist = self.flows.get_saveNamesLists('outFlow')
-        flowVizslist = self.flowVizs.get_saveNamesLists('outFlowViz')
-        warpPicslist = self.warpPics.get_saveNamesLists('warp')
+        rawDataList = self.rawData.get_SavetxtNamesLists('imgA','imgB')
+        flowslist = self.flows.get_SavetxtNamesLists('outFlow')
+        flowVizslist = self.flowVizs.get_SavetxtNamesLists('outFlowViz')
+        warpPicslist = self.warpPics.get_SavetxtNamesLists('warp')
         return rawDataList + flowslist + flowVizslist + warpPicslist
 
     def MovePics(self,gt=True):

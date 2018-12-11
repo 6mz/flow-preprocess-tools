@@ -16,7 +16,7 @@ from viz_flow import viz_flow, warp_easy
 # Please modify to your local caffe directory
 caffe_bin = '/home/a/public/yyy_/flow/flownet2/build/tools/caffe.bin'
 
-gpu_id = 2
+gpu_id = 1
 
 # =========================================================
 def evaluate_model(template, model_filename, img1_filename, img2_filename, save_filenames, vis_save_filenames, warp_save_filenames, scale_ratio=1.0):

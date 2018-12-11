@@ -136,7 +136,10 @@ class ListsManager(object):
             if key in self.values:
                 if len(self.values[key]):
                     example  = self.values[key][0]
-                    _ , ext = os.path.splitext(example)
+                    if(None == example):
+                        ext = '.NotFoundFile'
+                    else:
+                        _ , ext = os.path.splitext(example)
                     self.valuesShortNamesExt[key] = ext
                 else:
                     print('WARRING set_namesExtAuto : key '+str(key)+' is empty')
