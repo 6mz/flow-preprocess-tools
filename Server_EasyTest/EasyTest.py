@@ -12,6 +12,7 @@ from scipy.misc import imsave,imread
 from NamesManager import NameGenerater,ListsManager
 from myflowlib import read_gen,flow_write,save_list,read_list,save_3ziplist
 from myflowlib import Sparplot,EPE,EPE_usingmask,abs_flow,viz_flow
+from myflowlib import warp_easy,WarpNotEasy
 from datasetslib import Randomlist
 
 class EasyTest(object):
@@ -33,7 +34,8 @@ class EasyTest(object):
                 'outFlowViz','resFlowViz','bestFlowViz','gtFlowViz')
         self.flowVizsGray = ListsManager(
                 'outFlowVizg','resFlowVizg','bestFlowVizg','gtFlowVizg')
-        self.warpPics = ListsManager('warp','newWarp','warpOverlay')
+        self.warpPics = ListsManager('warp','warpOverlay','warpOverlayUsingMask',
+                                     'newWarp','newWarpOverlay','newWarpOverlayUsingMask')
         self.spars = ListsManager('sparData','sparPlot')
 
     def initRunDirs(self):
@@ -49,7 +51,7 @@ class EasyTest(object):
         None
         # i.e. 
         #self.flows.set_txtNames(gt="groundtruth",out="out.txt")
-        #all default
+
 
     def initTxtDirs(self):
         None
@@ -70,7 +72,7 @@ class EasyTest(object):
         self.flows.set_valuesShortNamesExt(gtFlow = '.UpToRaw')#!!
         self.flowVizs.set_allValuesShortNamesExt('.jpg')
         self.flowVizsGray.set_allValuesShortNamesExt('.jpg')
-        self.warpPics.set_allValuesShortNamesExt('.jpg')
+        self.warpPics.set_allValuesShortNamesExt('.png')
         self.spars.set_valuesShortNamesExt(sparData='.txt',sparPlot='.jpg')
 
     def initValuesShortNames(self):
@@ -88,8 +90,10 @@ class EasyTest(object):
                 outFlowVizg = 'fvizg.jpg',resFlowVizg = 'fvizg_res.jpg',
                 bestFlowVizg = 'fvizg_rbest.jpg',gtFlowVizg = 'fvizg_gt.jpg')
         self.warpPics.set_valuesShortNames(
-                warp = 'A_forward.jpg',newWarp = 'A_Nforward',
-                warpOverlay = 'wAB.jpg')
+                warp = 'A_forward.png',newWarp = 'A_Nforward.png',
+                warpOverlay = 'wAB.png',newWarpOverlay = 'wNAB.png',
+                warpOverlayUsingMask = 'wAB_UM.png',
+                newWarpOverlayUsingMask = 'wNAB_UM.png')
         self.spars.set_valuesShortNames(
                 sparData = 'sd.txt' ,sparPlot = 'sp.jpg')
 
@@ -115,9 +119,35 @@ class EasyTest(object):
         self.flowVizsGray.GenList(num,'outFlowVizg','resFlowVizg','gtFlowVizg')
         self.warpPics.GenList(num,'warp')
 
+    def GenListsFromTxts(self,num = 10):
+        self.ReadRawDataFromTxts(num = num)
+        self.rawData.set_allExtsAuto()
+        self.pics.set_valuesShortNamesExt(
+                imgA = self.rawData.get_valuesShortNamesExt('imgA'),
+                imgB = self.rawData.get_valuesShortNamesExt('imgB'))
+        self.flows.set_valuesShortNamesExt(
+                gtFlow = self.rawData.get_valuesShortNamesExt('gtFlow'))
+        self.pics.GenAllList(num)
+        self.flows.GenList(num,'outFlow','resFlow','gtFlow')
+        self.flowVizs.GenList(num,'outFlowViz','resFlowViz','gtFlowViz')
+        self.flowVizsGray.GenList(num,'outFlowVizg','resFlowVizg','gtFlowVizg')
+        self.warpPics.GenList(num,'warp')
+
     def GenRandomLists_Nogt(self,datasets_path,ltype='Sintel',ltype2='clean',num = 10):
         self.GenRawDataFromDatasets_Nogt(datasets_path = datasets_path,
                                     ltype = ltype,ltype2 = ltype2,num = num)
+        self.rawData.set_extsAuto('imgA','imgB')
+        self.pics.set_valuesShortNamesExt(
+                imgA = self.rawData.get_valuesShortNamesExt('imgA'),
+                imgB = self.rawData.get_valuesShortNamesExt('imgB'))
+        self.pics.GenAllList(num)
+        self.flows.GenList(num,'outFlow','resFlow')
+        self.flowVizs.GenList(num,'outFlowViz','resFlowViz')
+        self.flowVizsGray.GenList(num,'outFlowVizg','resFlowVizg')
+        self.warpPics.GenList(num,'warp')
+
+    def GenListsFromTxts_Nogt(self,num = 10):
+        self.ReadRawDataFromTxts_Nogt(num = num)
         self.rawData.set_extsAuto('imgA','imgB')
         self.pics.set_valuesShortNamesExt(
                 imgA = self.rawData.get_valuesShortNamesExt('imgA'),
@@ -141,7 +171,13 @@ class EasyTest(object):
         self.flowVizsGray.Savetxts('outFlowVizg','resFlowVizg','gtFlowVizg')
         self.warpPics.Savetxts('warp')
 
-# ================== Genlist functions ============================
+    def ReadStage1FromTxts(self,num = 10):
+        self.flows.Readtxts('outFlow','resFlow')
+        self.flowVizs.Readtxts('outFlowViz','resFlowViz','gtFlowViz')
+        self.flowVizsGray.Readtxts('outFlowVizg','resFlowVizg','gtFlowVizg')
+        self.warpPics.Readtxts('warp')
+
+# ================== Genlist fun ============================
 
     def GenRawDataFromDatasets(self,datasets_path,ltype='Sintel',ltype2='clean',num = 10):
         self.datasets_path = datasets_path
@@ -173,7 +209,7 @@ class EasyTest(object):
             self.datasample_len=len(self.rawData['imgA'])
             self.datasets_len = res[3]
 
-    def ReadDataFromTxts(self,num = 10):
+    def ReadRawDataFromTxts(self,num = 10):
         self.rawData.ReadAlltxts()
         if(len(self.rawData)):
             self.isempty = False
@@ -181,10 +217,10 @@ class EasyTest(object):
             self.datasets_len = self.datasample_len
         else:
             self.isempty = True
-            self.datasample_len=0
+            self.datasample_len = 0
             self.datasets_len = 0
 
-    def ReadDataFromTxts_Nogt(self,num = 10):
+    def ReadRawDataFromTxts_Nogt(self,num = 10):
         self.rawData.Readtxts('imgA','imgB')
         if(len(self.rawData)):
             self.isempty = False
@@ -192,7 +228,7 @@ class EasyTest(object):
             self.datasets_len = self.datasample_len
         else:
             self.isempty = True
-            self.datasample_len=0
+            self.datasample_len = 0
             self.datasets_len = 0
 
 
@@ -210,6 +246,7 @@ class EasyTest(object):
         imgB_sour = self.rawData['imgB']
         imgA_dest = self.pics['imgA']
         imgB_dest = self.pics['imgB']
+        print(len(imgA_sour),len(imgB_sour),len(imgA_dest),len(imgB_dest))
         source = imgA_sour + imgB_sour
         destination = imgA_dest + imgB_dest
         if(gt):
@@ -242,7 +279,7 @@ class EasyTest(object):
                 if 'c' == dicts[key] or 'd' == dicts[key]:
                     self.VizColorFlows(key,self.flows[key])
                 if 'g' == dicts[key] or 'd' == dicts[key]:
-                    self.VizGrayFlowsGray(key,self.flows[key])
+                    self.VizGrayFlows(key,self.flows[key])
             else:
                 print('WARRING VizFlows: '+
                       str(key)+' is not in the listdicts')
@@ -256,14 +293,104 @@ class EasyTest(object):
             flow_viz=Image.fromarray(viz_flow(flow))
             imsave(imName, flow_viz)
 
-    def VizGrayFlowsGray(self,key,flowList):
+    def VizGrayFlows(self,key,flowList):
         imGrayList = self.flowVizsGray[key+'Vizg']
         assert len(flowList) == len(imGrayList)
-        if(len(flowList)==0):print('WARRING VizGrayFlowsGray: Not find any flowfiles')
+        if(len(flowList)==0):print('WARRING VizGrayFlows: Not find any flowfiles')
         for flowName,imGrayName in zip(flowList,imGrayList):
             flow = read_gen(flowName)
             flow_g = abs_flow(flow)
             imsave(imGrayName, flow_g/np.max(flow_g))
+
+# =========== warp ==================
+#('warp','newWarp','warpOverlay','warpOverlayUsingMask')
+
+    def GenWarp(self,*lists):
+        keys = []
+        keys_1 = ['nw','nwo','nwom','w','wo','wom']
+        keys_2 = ['newWarp','newWarpOverlay','newWarpOverlayUsingMask',
+                  'warp','warpOverlay','warpOverlayUsingMask']
+        dict_ = dict(zip(keys_1,keys_2))
+        keys_3 = ['aw','anw','awww']
+        keys_4 = [['warp','warpOverlay','warpOverlayUsingMask'],
+                  ['newWarp','newWarpOverlay','newWarpOverlayUsingMask'],
+                  ['warpOverlay','warpOverlayUsingMask']]
+        dicts = dict(zip(keys_3,keys_4))
+        for key in lists:
+            if key in self.warpPics.get_keys():
+                keys.append(key)
+            elif key in dict_:
+                keys.append(dict_[key])
+            elif key in dicts:
+                keys.extend(dicts[key])
+            else:
+                print('WARRING GenWarp: '+
+                      str(key)+' is not in the listdicts')
+
+        print('OUTPUT ',end='')
+        Printlist([str(key) for key in keys],end=' , ')
+        print(' ...')
+
+        keys =set(keys)
+
+        num = len(self.rawData['imgA'])
+        self.warpPics._GenList(num,keys)
+        self.warpPics._Savetxts(keys)
+        self._GenWarp(keys)
+
+    def _GenWarp(self,keys):
+        flow_list = self.flows['outFlow']
+        A_list = self.rawData['imgA']
+        B_list = self.rawData['imgB']
+        assert len(flow_list)>0
+        assert len(flow_list) == len(A_list) == len(B_list)
+        for i, F_name, in enumerate(flow_list):
+            A_name = A_list[i]
+            B_name = B_list[i]
+            flow = read_gen(F_name)
+            A = read_gen(A_name)
+            B = read_gen(B_name)
+            if('warp' in keys or 'warpOverlay' in keys or 
+               'warpOverlayUsingMask' in keys):
+                A_warp = warp_easy(A,flow)
+            if('newWarp' in keys or 'newWarpOverlay' in keys or 
+               'newWarpOverlayUsingMask' in keys):
+                A_Nwarp = WarpNotEasy(A,flow)
+            print('\r',str(i),'/',str(len(flow_list)),end='')
+            for key in keys:
+                O_name = self.warpPics[key][i]
+                if('warp' == key):
+                    self.Warp(A_warp,B,O_name)
+                elif('warpOverlay' == key):
+                    self.WarpOverlay(A_warp,B,O_name)
+                elif('warpOverlayUsingMask' == key):
+                    self.WarpOverlayUsingMask(A_warp,B,O_name)
+                elif('newWarp' == key):
+                    self.Warp(A_Nwarp,B,O_name)
+                elif('newWarpOverlay' == key):
+                    self.WarpOverlay(A_Nwarp,B,O_name)
+                elif('newWarpOverlayUsingMask' == key):
+                    self.WarpOverlayUsingMask(A_Nwarp,B,O_name)
+        print('')
+
+
+    def Warp(self,A_warp,B,Oname):
+        A_warp = A_warp.astype(np.uint8)
+        A_warpimg = Image.fromarray(A_warp)
+        A_warpimg.save(Oname)
+
+    def WarpOverlay(self,A_warp,B,Oname):
+        overlay = A_warp*0.5 + B*0.5
+        overlay = overlay.astype(np.uint8)
+        overlayimg = Image.fromarray(overlay)
+        overlayimg.save(Oname)
+
+    def WarpOverlayUsingMask(self,A_warp,B,Oname):
+        mask = Mask(A_warp)
+        A_warp[mask]=B[mask]
+        A_warpimg = Image.fromarray(A_warp)
+        A_warpimg.save(Oname)
+
 
 
 # ========== spar ==============
@@ -284,7 +411,6 @@ class EasyTest(object):
         print("整个数据集抽样平均AEPE: ",self.avgAepe)
 
     def SparplotSimple(self,ids,netout_flow,uncertainty_flow,groundtruth_flow):
-
         gt = groundtruth_flow
         res = abs_flow(uncertainty_flow)
         flow = netout_flow
@@ -346,7 +472,7 @@ class EasyTest(object):
     def PrintAllInfo(self):
         print('\nEasyTest INFO:')
         self._PrintAll()
-        self.rawData.PrintInfo('rawPics')
+        self.rawData.PrintInfo('rawData')
         self.pics.PrintInfo('pics')
         self.flows.PrintInfo('flows')
         self.flowVizs.PrintInfo('flowVizs')
@@ -356,7 +482,7 @@ class EasyTest(object):
         if(self.isempty):print("WANNING: Not find any files !!")
 
     def _PrintAll(self):
-        print ('\n'.join(['%-20s:%-30s' % item for item in self.__dict__.items()]))
+        print ('\n'.join(['%-25s:%-30s' % item for item in self.__dict__.items()]))
 
     def PrintAll(self):
         print('\nEasyTest INFO:')
@@ -381,5 +507,12 @@ def MovePicsforLinux(source ,destination ):
             return True
     return False
 
+def Printlist(lists,end=''):
+    for i in lists[:-1]:
+        print(i,end=end)
+    print(lists[-1],end=' ')
 
-
+def Mask(im):
+    mask = np.sum(im,axis=2) == 0
+    masks = np.array([mask,mask,mask]).transpose((1,2,0))
+    return masks

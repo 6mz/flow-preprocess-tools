@@ -8,7 +8,7 @@ from scipy.misc import imsave,imread
 from os.path import *
 
 
-#%%========================================
+#%%=============================== flow io ===================================
 def open_flo_file(filename):
     with open(filename, 'rb') as f:
         magic = np.fromfile(f, np.float32, count=1)
@@ -138,7 +138,7 @@ def flow_write(filename,uv,v=None):
     tmp.astype(np.float32).tofile(f)
     f.close()
 
-#%%====================================================================
+#%%=================================== list io ====================================
 def save_list(fname,listname):
     with open(fname,'w') as f:
         for line in listname:
@@ -156,7 +156,7 @@ def read_list(fname):
     return lists
 
 
-#%%====================================================================
+#%%================================= viz flow ===================================
 #def viz_flow_fromfile(flow,logscale=True,scaledown=6,output=False):
 #    return viz_flow_(flow[0,:,:],flow[1,:,:],logscale=logscale,scaledown=scaledown,output=output)
 
@@ -254,7 +254,7 @@ def makecolorwheel():
     return colorwheel  
 
 
-#%%============================================================
+#%%=============================== spar plot =================================
 def abs_flow(flow,axis=2):
     return np.linalg.norm(flow,axis=axis)
 
@@ -367,3 +367,87 @@ def Sparplot(netout_flow,uncertainty_flow,groundtruth_flow,steps=50,\
                 imsave(path+'groundtruth_flow.jpg', gt)
 
     return (remainpixels,res_aepe,best_aepe,aepe0)
+
+#%%======================= warp ===============================
+#A_warp = warp_easy(A,gt)
+#A_warp2 = WarpNotEasy(A,gt)
+
+def warp_easy(im, flow):
+    image_height = im.shape[0]
+    image_width = im.shape[1]
+    flow_height = flow.shape[0]
+    flow_width = flow.shape[1]
+
+    (iy, ix) = np.mgrid[0:image_height, 0:image_width]
+    (fy, fx) = np.mgrid[0:flow_height, 0:flow_width]
+    fx=np.float64(fx)
+    fy=np.float64(fy)
+    fx += flow[:,:,0]
+    fy += flow[:,:,1]
+
+    fx = np.minimum(np.maximum(fx, 0), flow_width-1)
+    fy = np.minimum(np.maximum(fy, 0), flow_height-1)
+
+    warp = np.zeros((image_height, image_width, im.shape[2]))
+    
+    fx=np.rint(fx)
+    fy=np.rint(fy)
+    fx=fx.astype(np.int)
+    fy=fy.astype(np.int)
+
+    warp[fy,fx]=im[iy,ix]
+
+    return warp.astype(np.uint8)
+
+def WarpNotEasy(im,flow):
+    image_height = im.shape[0]
+    image_width = im.shape[1]
+    flow_height = flow.shape[0]
+    flow_width = flow.shape[1]
+    
+    (iy, ix) = np.mgrid[0:image_height, 0:image_width]
+    (fy, fx) = np.mgrid[0:flow_height, 0:flow_width]
+    fx=np.float64(fx)
+    fy=np.float64(fy)
+    fx += flow[:,:,0]
+    fy += flow[:,:,1]
+    absflow = np.sqrt(flow[:,:,0]**2+flow[:,:,1]**2)
+    
+    fx = np.minimum(np.maximum(fx, 0), flow_width-1)
+    fy = np.minimum(np.maximum(fy, 0), flow_height-1)
+    
+    warp = np.zeros((image_height, image_width, im.shape[2]))
+    
+    fx=np.rint(fx)
+    fy=np.rint(fy)
+    fx=fx.astype(np.int)
+    fy=fy.astype(np.int)
+    fxy = fy*image_width+fx
+    
+    repeat = FindRepeat(fxy)
+    for re in repeat:
+        y = re // image_width
+        x = re - y * image_width
+        af = absflow[y,x]
+        maxid = np.argmax(af)
+        xmax = x[maxid]
+        ymax = y[maxid]
+        ix[y,x]=xmax
+        iy[y,x]=ymax
+
+    warp[fy,fx]=im[iy,ix]
+
+    return warp.astype(np.uint8)
+
+def FindRepeat(fxy):
+    records_array = fxy.flatten()
+    idx_sort = np.argsort(records_array)
+    sorted_records_array = records_array[idx_sort]
+    # 去除相同元素的数组，第一次出现的位置，出现次数
+    vals, idx_start, count = np.unique(sorted_records_array, return_counts=True,return_index=True)
+    # 按idx_start分割数组成多个数组
+    res = np.split(idx_sort, idx_start[1:])
+    vals = vals[count > 1]
+    res = list(filter(lambda x: x.size > 1, res))
+    return res
+

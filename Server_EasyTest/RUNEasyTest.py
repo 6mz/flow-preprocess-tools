@@ -34,6 +34,8 @@ def NogtTest(rundir,datasets_path,ltype,ltype2,num):
     print("由于python3不能调用python2,请在程序挂起期间后到python2环境下执行 commend.py 或 commend.txt 运行PWC-Net\n ")
     ask('是否完成？',flag=1)
     et.VizFlows(outFlow='g',resFlow='g')
+    et.GenWarp('nW','wO','wOm')
+
 
 def FullTest(rundir,datasets_path,ltype,ltype2,num):
     et = EasyTest(rundir)
@@ -55,9 +57,9 @@ def FullTest(rundir,datasets_path,ltype,ltype2,num):
     et.VizFlows(bestFlow='d')
     et.PrintAllInfo()
 
-def FullTest2(rundir,num):
+def FullTest_FromTxt(rundir,num):
     et = EasyTest(rundir)
-    et.ReadDataFromTxts_Nogt(num)
+    et.GenListsFromTxts(num)
     et.PrintAllInfo()
     ask()
     et.SaveLists_stage1()
@@ -75,15 +77,26 @@ def FullTest2(rundir,num):
     et.VizFlows(bestFlow='d')
     et.PrintAllInfo()
 
+def NogtTest_AllFromTxt(rundir,num):
+    et = EasyTest(rundir)
+    et.GenListsFromTxts_Nogt(num)
+    et.ReadStage1FromTxts(num)
+    et.PrintAllInfo()
+    ask()
+    et.MovePics(gt=False)
+    et.GenWarp('anw','awww')
+    et.PrintAllInfo()
+
 if '__main__' == __name__:
     my_dir = os.path.dirname(os.path.realpath(__file__))
     os.chdir(my_dir) 
-    rundir = './data/real_raw_01'
-    datasets_path='/home/a/public1/flow/data/test/real20181211/20181203/4X/'
+    rundir = './data/real_test_warp'
+    datasets_path='/home/a/public1/flow/data/test/real20181127/pic'
     ltype = 'Real'
     ltype2 = None
-    num = 10
+    num = 50
 
-    NogtTest(rundir,datasets_path,ltype,ltype2,num)
+    #NogtTest(rundir,datasets_path,ltype,ltype2,num)
     #FullTest(rundir,datasets_path,ltype,ltype2,num)#gt
     #FullTest2(rundir,num)#gt
+    NogtTest_AllFromTxt(rundir,num)

@@ -252,7 +252,7 @@ class ListsManager(object):
         self._Savetxts(keys)
 
     def _Savetxts(self,keys):
-        print('Saveing   ' + ' , '.join([item[1] for item in self.txtFileNames.items()]))
+        print('Saveing   ' + ' , '.join([self.txtFileNames[key] for key in keys]))
         SavetxtNames = self.get_allSavetxtNames()
         for key in keys:
             if key in SavetxtNames:
@@ -297,10 +297,10 @@ class ListsManager(object):
 
     def PrintInfo(self,name = ''):
         print('\nGROUP: ',name)
-        print('%-15s'%'Lists||items:','%-10s'%'vLen','%-20s'%'vDirs',
+        print('%-25s'%'Lists||items:','%-10s'%'vLen','%-20s'%'vDirs',
               '%-20s'%'sNames','%-15s'%'nameExt','%-20s'%'txtName')
         for key in self.get_keys():
-            print('%-15s'% key,
+            print('%-25s'% key,
                   '%-10s'% len(self.values[key]),
                   '%-20s'% self.valuesDirs[key] ,
                   '%-20s'% self.get_valuesShortName(key),
