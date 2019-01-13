@@ -8,42 +8,100 @@ from PIL import Image,ExifTags
 import math 
 import numpy as np
 
-from VideoReader import _DEFAULT_VideoReader_OPTION,VideoReader,GetAllGroups
+from VideoReader import _DEFAULT_VideoReader_OPTION,VideoReader
 
 
 _DEFAULT_NameAnalyzer_OPTION = {
-        'radio_change':True,
+        # 输出图像期望尺寸设置
         'height':1440, # 提取的图像高度
         'width':1080, # 提取的图像宽度
+        # 输入输出路径设置
         'path_in':'RAW DIR', # 原始文件夹
         'path_out':'TARGET DIR', # 目标文件夹
-        'out_style':'group', # 输出格式，在['split','group']中选择一个
-        # 对于splite，指定创建n个文件夹(split_n)后把每组图片分置在各个文件夹中
-        'split_n':3 , # 必须小于等于下面的img_min_group_num参数
-        'split_start_fileid':0 ,# 起始图片编号
-        # 对于group ，各组图片存在同一个文件夹中，允许不同的组中的图片数目不同
+        # 输出分组策略设置
+        'out_style':'group', # 输出分组策略，在['split','group']中选择一个
+            # 对于 'splite'，指定创建n个文件夹(split_n)后把每组图片相同序号的图片放在同一个文件夹中
+            # 下方的 split_n 参数用于设置文件夹数目，某组超过这个数目的其他图片会被舍弃，想保留请先人工筛选
+                # 如对于两组图片： g1_1,g1_2 ;g2_1,g2_2,g2_3
+                # 分类成 folder1:[g1_1,g2_1] ,folder2:[g1_2,g2_2],舍弃g2_3
+            # 对于 'group' ，同组图片存在同一个文件夹中，按允许不同文件夹中的图片数目不同
+                # 如对于两组图片： g1_1,g1_2 ;g2_1,g2_2,g2_3
+                # 分类成 folder1:[g1_1,g1_2] ,folder2:[g2_1,g2_2,g2_3],保留g2_3
+        # 对于splite 模式下的设置
+        'split_n':3 , # 设置文件夹数目，必须小于等于下面的img_min_ele_num参数
+        'split_start_fileid':0, # 起始图片编号,默认是0,一般用于扩展数据集
+        'split_keep_serial':False, # 是否保留图像文件的序列号，
+            # 如果不保留只能通过文件夹名称来判断图像在序列中的编号
+        'split_keep_serial_style':'number', # 序列号的格式,默认使用数字
+            # 在['number','underline']中选择
+            #           文件夹1    文件夹2    文件夹3
+            # 不使用:     1.jpg ,   1.jpg ,   1.jpg
+            # number:  1_0.jpg , 1_1.jpg , 1_2.jpg
+            # underline: 1.jpg ,  1_.jpg , 1__.jpg
+        # 对于group 模式下的设置
+        'group_start_dirid':0 , # 起始文件夹编号
+        # 文件和文件夹名称设置
         'dir_prefix': '' , # 输出文件夹前缀名
         'dir_suffix': '' , # 输出文件夹后缀名
         'dir_digits': 4,     # 输出文件夹编号位数
-        'group_start_dirid':0 , # 起始文件夹编号
         'file_prefix': '', # 输出文件前缀名
-        'file_suffix': '.jpg', # 输出文件后缀名
+        'file_suffix': '.jpg', # 输出文件后缀名（包含系统意义上的后缀名）
         'file_digits': 4,    # 输出文件编号位数
-        'img_max_interval': 3, # 判定两张图片为同一组图片的最大间距，单位为秒（s）
-        'img_min_group_num': 3, # 一组图像最少的元素数目
+        # 图像处理设置
         'auto_rotate':False, # 部分手机视频图像需要旋转，在遇到长宽比倒置的情况下会执行旋转操作
-        'rotate_angle': 270,
-        'processing_type':'zoom' # ['zoom','slice']
+        'rotate_angle': 270, # 和auto_rotate一起设置，定义旋转的角度
+        'processing_type':'zoom', # 切片策略，在['zoom','slice']中选择一个
+            # 'zoom' 表示如果原图的尺寸大于期望尺寸，则先进行缩放到接近期望尺寸后再切片，尽可能保留多的内容
+            # 'slice' 表示如果原图的尺寸大于期望尺寸，直接在中心进行切片，大小为期望尺寸
+        ## =========================================
+        # 输入格式为 直接拍摄图像 的设置（dtype=='img'）
+        'img_max_interval': 3, # 判定两张图片为同一组图片的最大间距，单位为秒（s）
+        'img_min_ele_num': 3, # 一组图像最少的元素数目
+        # 输入格式为 视频 的设置（dtype=='video'）
+        'video_vr_opts': _DEFAULT_VideoReader_OPTION, 
+            # 视频读取器参数，详细见_DEFAULT_VideoReader_OPTION
+            # 'info':False , # 是否在初始化时输出视频信息
+            # 'start': 'first' , # 开始帧,first默认第一帧 ，也可输入数字，
+            #    # 如果是整数则代表第n帧，
+            #    # 如果是一个大于0小于1的浮点数m，则代表第 floor(m*总帧数) 帧
+            #    # 其他输入情形默认为第0帧
+            # 'end':'last', # 结束帧，last默认最后一帧，也可输入数字，
+            #    # 如果是整数则代表第n帧，
+            #    # 如果是一个大于0小于1的浮点数m，则代表第 ceil(m*总帧数) 帧
+            #    # 其他输入情形默认为第0帧
+            # 'interval': 1 , # (组间)间隔,默认1帧
+            #    # 在这里，间隔一般由video_group_num计算得到，除非将其设置为0
+            # 'group_ele': 3 , # 一组提取的帧数
+            # 'group_interval': 1  # 组内间隔
+        'video_group_num': 2, # 从每个视频中提取多少组图像;如果设置为零则不使用此参数，改用
+            # video_vr_opts中的interval参数（即帧间间隔）来读取
+        'video_image_dir':'default',  # 存放从视频中读取的图片的目录，
+            # 默认情况下在opts['path_in'] 下的 VIDEO_IMAGE 文件夹中
+        'video_image_ext':'.jpg', # 从视频中提取的临时图片的后缀名，
+            # 注意，最终文件的后缀名由file_suffix决定
+        'video_wait':True, # 在读取完视频之后是否暂停，供手动选择图片
         }
 
 
+# 原始输入类型列表
+# img:输入的是直接拍摄的序列图像
+# raw：输入的是raw格式（纯数据矩阵）图像
+# video：输入的是视频
 _NAME_FORMAT_LIST = ['img','raw','video']
+# 定义图像后缀名，img模式下，后缀名不在列表中的文件都会被忽略
 _IMGTYPE_LIST = ['jpg','bmp','png','jpeg','rgb','tif']
+
+_VIDTYPE_LIST = ['mp4',]
+# 定义从文件名中读取时间的方式
+    # date表示日期,time表示时间;后面的列表中的
+    # 第一项表示正则表达式的提取规则，
+    # 第二项表示提取后的字符串中有效字段的起始结束位置
+    # 第三项表示datatime类读取有效字段时的格式
 _DEFAULT_NAME_FORMAT = {
         'img':{'date':['IMG_\d{8}_',(4,12),'%Y%m%d']  ,
                'time':['_\d{6}\.'  ,(1,7) ,'%H%M%S']} ,#%f微秒
         'raw':[],
-        'video':[]
+        'video':[] # 视频不按照时间分类
         }
 
 
@@ -71,35 +129,57 @@ class NameAnalyzer(object):
         self.dtype = dtype
         self.opts = opts
         self.skip = 0
-        self.raw_files = 0
+        self.raw_files_num = 0
+        self.img_num = 0
         self.OptCheck()
 
     def OptCheck(self):
         opts = self.opts
         assert(opts['out_style'] in ['split','group'])
         assert(opts['processing_type'] in ['zoom','slice'])
-        assert(opts['img_min_group_num'] >= opts['split_n'])
+        assert(opts['split_keep_serial_style'] in ['number','underline'])
+        assert(opts['img_min_ele_num'] >= opts['split_n'])
         assert(opts['path_in'] is not 'RAW DIR')
         assert(opts['path_out'] is not 'TARGET DIR')
+        
+        if(opts['video_image_dir'] is 'default'):
+            opts['video_image_dir'] = os.path.join(opts['path_in'],'VIDEO_IMAGE')
+
 
     def Run(self):
         '''
-        核心函数，实现自动分类
-        1.根据文件名中的时间进行分类
-        2.对图像尺寸进行切片
-        3.创建目标文件夹,保存图片（与2在同一个函数进行）
+        核心函数，实现图片自动分组、视频读取并分组等核心功能
+        主要流程：
+            0.预先工作：打印信息，检查源文件夹
+            1.根据文件名中的时间进行分组
+            2.对图像尺寸进行切片
+            3.创建目标文件夹,保存图片（与2在同一个函数进行）
+        输入输出：无
         '''
+        # 打印配置信息
+        self.Print()
+        # 检查源文件夹是否存在
+        if not os.path.exists(self.opts['path_in']):
+            print(f"ERROR: Dir [{self.opts['path_in']}] not exist")
+            return
+
         if self.dtype is 'img':
-            self.ImgClassify()
-        image_groups = self.image_groups
-        self.ImgProcessing(image_groups)
+            image_groups = self.ImgClassify()
+            if(image_groups is False):return
+        elif self.dtype is 'video':
+            self.ReadVideos()
+            image_groups = self.VideoClassify()
+            if(image_groups is False):return
+
+        self.ImageGroupsProcessing(image_groups)
 
 
-    def ImgProcessing(self,image_groups):
+    def ImageGroupsProcessing(self,image_groups):
         '''
-        对图像进行处理、重命名、分类保存
+        当dtype是'img'时调用
+        对图像进行处理、重命名、分组保存
             1.对image_groups中的每个图片进行处理使得符合标准尺寸（标准尺寸在opts中定义）
-            2.根据不同的分类类型创建文件夹并保存图像文件
+            2.根据不同的分组类型创建文件夹并保存图像文件
         输入：
             image_groups：已经按时间分完组的列表，列表的每个元素代表一组图像
         输出：
@@ -116,14 +196,15 @@ class NameAnalyzer(object):
         file_digits = self.opts['file_digits']
         s_fileid = self.opts['split_start_fileid']
         s_dirid = self.opts['group_start_dirid']
+        split_keep_serial = self.opts['split_keep_serial']
+        split_keep_serial_style = self.opts['split_keep_serial_style']
         # 判断输出文件夹存不存在
         if not os.path.exists(path_out):
             print(f"Dir {path_out} not exists , Create folder...")
             os.makedirs(path_out)
-        
         # 如果是分离模式，在循环外创建文件夹
         if(out_style == 'split'):
-            print(' out_style : split ')
+            print('INFO: out_style : split ')
             split_n = self.opts['split_n']
             
             split_dir_names = []
@@ -132,13 +213,13 @@ class NameAnalyzer(object):
                 dir_name = dir_prefix + ids + dir_suffix
                 dir_name = os.path.join(path_out,dir_name)
                 if not os.path.exists(dir_name):
-                    print(f"Dir {dir_name} not exists , Create folder...")
+                    print(f"INFO: Dir {dir_name} not exists , Create folder...")
                     os.makedirs(dir_name)
                 split_dir_names.append(dir_name)
         else:
-            print(' out_style : group ')
-
+            print('INFO: out_style : group ')
         count = 0
+        self.img_save_image_groups = []
         for gi,group in enumerate(image_groups):
             if(out_style == 'group'):
                 # 组模式，给每个组创建文件夹
@@ -146,51 +227,57 @@ class NameAnalyzer(object):
                 dir_name = dir_prefix + ids + dir_suffix
                 dir_name = os.path.join(path_out,dir_name)
                 if not os.path.exists(dir_name):
-                    print(f"Dir {dir_name} not exists , Create folder...")
+                    print(f"INFO: Dir {dir_name} not exists , Create folder...")
                     os.makedirs(dir_name)
-            # 读取、处理图像
+            # 读取、处理、保存一组图像
             for gj,img_name in enumerate(group):
                 #如果是分离模式，一组图片数量超过上限就应停止
                 if(out_style == 'split' and gj >= split_n):
-                    print('skip img')
+                    print('INFO:Ignore the excess image in the group: [',os.path.basename(img_name),']')
                     self.skip += 1
                     continue
                 count += 1
-                print('ImgProcessing ',count,'/',self.raw_files-self.skip)
+                print('INFO:ImgProcessing ',count,'/',self.img_num -self.skip)
                 img = Image.open(img_name)
                 # 通过ExifTags标志判断是否需要旋转
                 img = OrientationCorrection(img)
-                img = self.Processing(img)
-                
-                #命名
+                # 对图像进行旋转缩放切片操作使得符合标准尺寸
+                img = self.ImageProcessing(img)
+                #对图像命名并保存
                 if(out_style == 'group'):
-                    # 使用内层编号
+                    # 组模式,使用内层(组内序号)编号
                     ids = str( gj ).zfill(file_digits)
                     file_name = file_prefix + ids + file_suffix
                     # 直接使用外层循环创建的文件夹名称
                     file_name = os.path.join(dir_name,file_name)
                 else:
-                    # 使用外层编号
+                    # 分离模式,使用外层(组序号)编号
                     ids = str( gi + s_fileid ).zfill(file_digits)
+                    # 如果设置了split_keep_serial参数，文件名除了组序号之外再加上组内序列号
+                    if(split_keep_serial):
+                        if(split_keep_serial_style is 'number'):
+                            ids = ids + f'_{gj}'
+                        elif(split_keep_serial_style is 'underline'):
+                            ids = ids + '_'*gj
                     file_name = file_prefix + ids + file_suffix
                     file_name = os.path.join(split_dir_names[gj],file_name)
-                
-                print(file_name)
+                print('INFO:Image [',os.path.basename(img_name),
+                      '] save as [',os.path.basename(file_name),
+                      '] in directory [',os.path.dirname(file_name),']')
                 img.save(file_name)
 
 
-
-    def Processing(self,im):
+    def ImageProcessing(self,im):
         '''
         对图像进行旋转缩放切片操作使得符合标准尺寸(标准尺寸在opts中定义)
         思路是：
             1.判断是否需要旋转
-                只针对视频使用，图片通过ExifTags标志判断是否需要旋转
+                只针对视频导出的图片使用，手机直接拍摄的图片通过ExifTags标志判断是否需要旋转
             2.进行缩放，使缩放后的图像的能覆盖目标尺寸的图像,即
               w>=tw,h>=th
             3.进行切片,切除长边
         输入：
-            im：图像，类型是Image
+            im：待处理图像，类型是Image
         输出：
             img：处理完后的图像，类型是Image
         '''
@@ -214,10 +301,10 @@ class NameAnalyzer(object):
             img = im
         ## step2. 进行缩放，使缩放后的图像的能覆盖目标尺寸的图像
         if(w == tw and h == th):
-            # 特殊情况直接返回
+            # 尺寸一样大直接返回
             return img
         if(w == tw and h > th):
-            # 直接切片情形
+            # 有一边（h或w）一样大的情形
             hs = int((h - th) /2)
             box=(0,hs,tw,hs+th) 
             return img.crop(box)
@@ -244,9 +331,10 @@ class NameAnalyzer(object):
         box=(ws,hs,ws+tw,hs+th) 
         return img.crop(box)
 
+
     def ImgClassify(self):
         '''
-        对img进行分类
+        根据文件名中的时间对图像进行分组
         1.获得文件夹中的所有【图像】文件,图像的后缀名列表在文件开头定义
         2.获取文件名中的时间,按时间进行分组,判断组内图像数目是否符合要求
         输入：
@@ -255,18 +343,18 @@ class NameAnalyzer(object):
             image_groups：已经按时间分完组的列表，列表的每个元素代表一组图像
         '''
         ## step1.获得文件夹中的所有图像文件
-        img_dir = self.opts['path_in']
-        if not os.path.exists(img_dir):
-            print(f'Dir [{img_dir}] not exist')
-            return False
-        self.image_list = sorted(glob(os.path.join(img_dir, '*')))
-        self.raw_files = len(self.image_list)
+        file_list = self.GetFiles()
+        print(f'INFO: Find {len(file_list)} Files with ',end='')
         # 判断是不是图像格式
-        for item in self.image_list:
+        self.image_list = []
+        for item in file_list:
             _,ext = os.path.splitext(item)
             if(ext[1:] not in _IMGTYPE_LIST):
-                self.skip += 1
-                self.image_list.remove(item)
+                pass
+            else:
+                self.image_list.append(item)
+        self.img_num = len(self.image_list)
+        print(f'{self.img_num} Images')
         ## step2.获取文件名中的时间，按时间进行分组，判断组内图像数目是否符合要求
         image_groups = []
         group = []
@@ -284,12 +372,114 @@ class NameAnalyzer(object):
                 group.append(item)
             else:
                 # 判断组内图像数目是否符合要求
-                if(len(group) >= self.opts['img_min_group_num']):
+                if(len(group) >= self.opts['img_min_ele_num']):
                     image_groups.append(group)
+                elif(len(group) >= 0):
+                    group = list(map(os.path.basename,group))
+                    print(f'INFO:Insufficient number of images in group,\
+                          ignore images {group}')
+                    self.skip += len(group)
                 group = [item]
+        # 处理最后一组
+        if(len(group) >= self.opts['img_min_ele_num']):
+            image_groups.append(group)
+        else:
+            group = list(map(os.path.basename,group))
+            print(f'INFO:Insufficient number of image(s) in group,\
+                  ignore images {group}')
+            self.skip += len(group)
 
-        self.image_groups = image_groups
+        self.img_image_groups = image_groups
         return image_groups
+
+
+    def ReadVideos(self):
+        '''
+        主要功能是从视频中读取图像并保存
+        1.
+        2.
+        输入：
+            无
+        输出：
+            无
+        '''
+        ## step1.获得文件夹中的所有视频文件
+        file_list = self.GetFiles()
+        print(f'INFO: Find {len(file_list)} Files with ',end='')
+        # 判断是不是视频格式
+        self.video_list = []
+        for item in file_list:
+            _,ext = os.path.splitext(item)
+            if(ext[1:] not in _VIDTYPE_LIST):
+                pass
+            else:
+                self.video_list.append(item)
+        print(f'{ len(self.video_list)} Videos')
+        ## step2.
+        # 在源文件目录下创建存放源图像文件的目录，此目录及其中的文件会被保留
+        video_image_dir = self.opts['video_image_dir']
+        if not os.path.exists(video_image_dir):
+            os.makedirs(video_image_dir)
+        #
+        for video_name in self.video_list:
+            vr_opts = copy.deepcopy(self.opts['video_vr_opts'])
+            vr = VideoReader(video_name , opts = vr_opts)
+            if self.opts['video_group_num']:
+                vr.AutoSet(self.opts['video_group_num'])
+            vr.PrintVideoInfo()
+            image_groups_arrays = vr.GetAllGroups()
+            self.SaveVideoImages(image_groups_arrays,video_name)
+        
+        if(self.opts['video_wait']):
+            print('please check')
+            input()
+
+
+
+    def SaveVideoImages(self,image_groups_arrays,video_name):
+        video_name_ = os.path.basename(video_name)
+        video_name, _ = os.path.splitext(video_name_)
+        ext = self.opts['video_image_ext']
+        count = 0
+        for i,image_group_arrays in enumerate(image_groups_arrays):
+            for j,image_array in enumerate(image_group_arrays):
+                image_name_ = video_name + '_' + str(i) + '_' + str(j) + ext
+                dir_path = self.opts['video_image_dir']
+                image_name = os.path.join(dir_path,image_name_)
+                image = Image.fromarray(image_array)
+                image.save(image_name)
+                count += 1
+        print(f'INFO: video [{video_name_}] output {count}({len(image_groups_arrays)}) images')
+
+
+
+    def VideoClassify(self):
+        '''
+        '''
+        image_groups = []
+
+        
+        
+        
+        
+        
+        
+        
+        self.video_image_groups = image_groups
+        return image_groups
+
+
+    def GetFiles(self,img_dir = None):
+        '''
+        '''
+        img_dir = self.opts['path_in'] if img_dir is None else img_dir
+        if not os.path.exists(img_dir):
+            print(f'Dir [{img_dir}] not exist')
+            return []
+        file_list = sorted(glob(os.path.join(img_dir, '*')))
+        self.raw_files_num = len(file_list)
+        return file_list
+
 
     def GetTimeFromName(self,name):
         '''
@@ -331,6 +521,17 @@ class NameAnalyzer(object):
         date_time = datetime.datetime.strptime(date+time,date_format[2]+time_format[2])
         return date_time
 
+    def Print(self):
+        '''
+        打印相关信息：类配置，视频信息
+        '''
+        print("opts INFO:")
+        [print(f'{opt[0]}:{opt[1]}') for opt in self.opts.items() if opt[0] is not 'video_vr_opts']
+        if (self.dtype is 'video'):
+            print("VideoReader opts INFO:")
+            [print(f'{opt[0]}:{opt[1]}') for opt in self.opts['video_vr_opts'].items()]
+
+
 def OrientationCorrection(img):
     '''
     利用PIL读取exif中的orientation信息，
@@ -350,23 +551,35 @@ def OrientationCorrection(img):
     return img
 
 
-
 ### 测试 ###
+# 直接图像类型
+#opts = copy.deepcopy(_DEFAULT_NameAnalyzer_OPTION)
+#opts['path_in']='E:/data/图片预处理/img/20190108/RGB/'
+#opts['path_out']='../data/Real/test1/'
+#opts['out_style']='split'
+#opts['split_keep_serial']=True
+#opts['split_keep_serial_style']= 'underline'
+#opts['dir_prefix']= 'im'
+#opts['dir_digits']= 0
+#opts['file_digits']= 0
+##opts['auto_rotate']=True
+#a = NameAnalyzer('img',opts)
+#a.Run()
+#image_groups = a.img_image_groups
+
+# 视频类型
 opts = copy.deepcopy(_DEFAULT_NameAnalyzer_OPTION)
-opts['path_in']='E:/data/图片预处理/img/20190108/RGB/'
+opts['path_in']='E:/data/图片预处理/img/20190108/VIDEO/'
 opts['path_out']='../data/Real/test1/'
 opts['out_style']='split'
-opts['dir_prefix']= 'im'
-opts['dir_digits']= 0
-opts['file_digits']= 0
-#opts['auto_rotate']=True
+opts['split_keep_serial']=True
+opts['split_keep_serial_style']= 'underline'
 
-a = NameAnalyzer('img',opts)
-a.Run()
-image_groups = a.image_groups
-#a.ImgProcessing(image_groups[3:6])
-#img = Image.open(image_groups[9][2])
-#img = OrientationCorrection(img)
-#d=np.array(img)
-#c=a.Processing(img)
-#c.save('E:/data/图片预处理/img/20190108/RGB/test1.jpg')
+vr_opts = copy.deepcopy(_DEFAULT_VideoReader_OPTION)
+vr_opts['start'] = 0.05
+vr_opts['end'] = 0.95
+opts['video_vr_opts'] = vr_opts
+opts['video_group_num'] = 2
+
+a = NameAnalyzer('video',opts)
+a.ReadVideos()

@@ -11,14 +11,21 @@ Modifications licensed under the MIT License
 import cv2
 import matplotlib.pyplot as plt
 import copy
+import math
 
 
 _DEFAULT_VideoReader_OPTION = {
         'info':False , # 是否在初始化时输出视频信息
-        'start': 'first' , # 开始帧,first默认第一帧 ,也可输入数字
-        'end':'last', # 结束帧，last默认最后一帧，也可输入数字
+        'start': 'first' , # 开始帧,first默认第一帧 ，也可输入数字，
+            # 如果是整数则代表第n帧，
+            # 如果是一个大于0小于1的浮点数m，则代表第 floor(m*总帧数) 帧
+            # 其他输入情形默认为第0帧
+        'end':'last', # 结束帧，last默认最后一帧，也可输入数字，
+            # 如果是整数则代表第n帧，
+            # 如果是一个大于0小于1的浮点数m，则代表第 ceil(m*总帧数) 帧
+            # 其他输入情形默认为第0帧
         'interval': 1 , # 间隔,默认1帧
-        'group_num': 3 , # 一组提取的帧数
+        'group_ele': 3 , # 一组提取的帧数
         'group_interval': 1  # 组内间隔
         }
 
@@ -62,14 +69,20 @@ class VideoReader(object):
         opts = self.opts
         # 检查opts start
         start = opts['start']
-        start = 0 if start == 'first' else start
-        start = min(self.n_frames-1,max(0,start)) 
+        start = 0 if start is 'first' else start
+        start = math.floor(self.n_frames * start) \
+            if isinstance(start,float) and 0<start<1 else start
+        start = min(self.n_frames-1,max(0,start)) \
+            if isinstance(start,int) else 0
         opts['start'] = start
 
         # 检查opts end
         end = opts['end']
-        end = self.n_frames if end == 'last' else end
-        end = min(self.n_frames,max(start,end)) 
+        end = self.n_frames if end is 'last' else end
+        end = math.ceil(self.n_frames * end) \
+            if isinstance(end,float) and 0<end<1 else end
+        end = min(self.n_frames,max(start,end)) \
+            if isinstance(end,int) else self.n_frames
         opts['end'] = end
 
         # 检查opts interval
@@ -79,21 +92,22 @@ class VideoReader(object):
         
         self.opts = opts
 
-    def GetFrame(self):
+    def GetFrame(self,additional_add_frame = 0):
         '''
         相当于拥有自动指针：
         获取视频中的当前帧图像，读取完毕后更新当前帧到下一帧（间距由opts['interval']指定）
         输入：
-            无
-        输出：
-            二元元组
-            正常情形：
-                (当前帧,当前帧图像) 
-            若遇到视频结束 或 遇到当前帧大于opts['end']: 
-                (False,None)
+            additional_add_frame(可选):读取前额外增加的帧数，默认为0，作用于读取之前;
+                注意opts['interval']作用于读取之后，且每次调用都会执行;
+                一般用于非均匀间隔读取时
+        正常输出：
+            (指定帧,指定帧图像) 
+        异常输出：
+            (False,None)：遇到视频结束
         '''
         if self.end:
             return ( False , None )
+        self.current_frame += additional_add_frame
         current_frame = self.current_frame 
         self.cap.set(cv2.CAP_PROP_POS_FRAMES , current_frame)
         success,image = self.cap.read()
@@ -127,12 +141,10 @@ class VideoReader(object):
         指定获取视频中的某帧图像，不受设置中的start和end参数影响
         输入：
             current_frame：指定帧
-        输出：
-            二元元组
-            正常情形：
-                (指定帧,指定帧图像) 
-            若遇到视频结束
-                (False,None)
+        正常输出：
+            (指定帧,指定帧图像) 
+        异常输出：
+            (False,None)：遇到视频结束
         '''
         if self.end:
             return ( False , None )
@@ -143,26 +155,27 @@ class VideoReader(object):
         else:
             return ( False , None )
 
-    def GetGroup(self):
+    def GetGroup(self,additional_add_frame = 0):
         '''
         相当于拥有自动指针,与GetFrame的指针不共享
         推荐不要混用两种模式
         获取视频中的当前帧后的一组图像（组内图像间距由opts['group_interval']指定）
         读取完毕后当前帧更新为下一组的开始帧（组间间距由opts['interval']指定,组间间距的定义是两组开头帧直接的差）
         输入：
-            无
-        输出：
-            二元元组
-            正常情形：
-                (当前组开始帧,[当前组图像列表]) ，列表数量由opts['group_num']指定
-            若其中某一帧遇到视频结束 或 大于opts['end']则返回: 
-                (False,None)
+            additional_add_frame(可选):读取前额外增加的帧数，默认为0，作用于读取之前;
+                注意opts['interval']作用于读取之后，且每次调用都会执行;
+                一般用于非均匀间隔读取时
+        正常输出：
+            (当前组开始帧,[当前组图像列表])
+        异常输出：
+            (False,None): 某一帧遇到视频结束 或 帧序号大于opts['end']
         '''
+        self.current_group_frame += additional_add_frame
         current_group_frame = self.current_group_frame 
         c_g_f = current_group_frame
         group_frames = []
         
-        for _ in range(self.opts['group_num']):
+        for _ in range(self.opts['group_ele']):
             if self.end:
                 return ( False , None )
             self.cap.set(cv2.CAP_PROP_POS_FRAMES , current_group_frame)
@@ -188,16 +201,14 @@ class VideoReader(object):
         指定获取视频中指定帧后的一组图像，不受设置中的start和end参数影响
         输入：
             current_frame：指定帧
-        输出：
-            二元元组
-            正常情形：
-                (当前组开始帧,[当前组图像列表]) ，列表数量由opts['group_num']指定
-            若其中某一帧遇到视频结束 或 大于opts['end']则返回: 
-                (False,None)
+        正常输出：
+            (当前组开始帧,[当前组图像列表]) 
+        异常输出：
+            (False,None): 某一帧遇到视频结束 或 帧序号大于opts['end']
         '''
         group_frames = []
         c_g_f = current_group_frame
-        for _ in range(self.opts['group_num']):
+        for _ in range(self.opts['group_ele']):
             if self.end:
                 return ( False , None )
             self.cap.set(cv2.CAP_PROP_POS_FRAMES , current_group_frame)
@@ -216,7 +227,7 @@ class VideoReader(object):
     def AutoSet(self,num = 5):
         '''
         用于在不知道视频的帧数的情形下，给定要采集的数目，自动设置采集的帧（组间）间距，
-        采集的帧均匀分布于start帧到end帧之间,同时间距向下取整，因此end帧几乎不可能取到
+        采集的帧均匀分布于start帧到end帧之间,同时间距向上取整，因此end帧几乎不可能取到
         输入：
             num：采集数目
         输出：
@@ -231,8 +242,14 @@ class VideoReader(object):
         if interval < 1:
             print(num,'is too big')
             interval = 1
-        self.opts['interval'] = int(interval)
+        self.opts['interval'] = math.ceil(interval)
 
+
+    def GetAllGroups(self):
+        return GetAllGroups(self)
+
+    def GetAllFrames(self):
+        return GetAllFrames(self)
 
     def Print(self):
         '''
@@ -240,6 +257,9 @@ class VideoReader(object):
         '''
         print("opts INFO:")
         [print(f'{opt[0]}:{opt[1]}') for opt in self.opts.items()]
+        self.PrintVideoInfo()
+
+    def PrintVideoInfo(self):
         print("\nVideo INFO:")
         print("Duration of the video: {} seconds".format(self.dur))
         print("Number of frames: {}".format(self.n_frames))
@@ -255,10 +275,10 @@ def GetAllFrames(VR):
     '''
     res = []
     while(True):
-        s,im = a.GetFrame()
+        s,im = VR.GetFrame()
         if im is None:
             break
-        print('get Frame:',s,'/',VR.n_frames)
+        print(f'INFO: get Frame:{s}/{VR.n_frames}')
         res.append(im)
     return res
 
@@ -272,23 +292,27 @@ def GetAllGroups(VR):
     '''
     res = []
     while(True):
-        s,ims = a.GetGroup()
+        s,ims = VR.GetGroup()
         if ims is None:
             break
-        print('get Group:',s,'/',VR.n_frames,'\t',VR.opts['group_num'],' frame every group')
+        gf = VR.opts['group_interval'] * VR.opts['group_ele']
+        print(f"INFO: get Group:{s}/{VR.n_frames}\t{VR.opts['group_ele']}({gf}) frame every group")
         res.append(ims)
     return res
+
+
 
 
 ## 测试模块 ###
 #opts = copy.deepcopy(_DEFAULT_VideoReader_OPTION)
 #opts['start'] = 40
-#opts['interval'] = 10
+##opts['interval'] = 10
 #opts['end'] = 'last'
 #opts['info'] = 'True'
 #a = VideoReader('../data/Real/test.mp4',opts = opts)
-#a.AutoSet(10)
+#a.AutoSet(2)
 #a.Print()
-#res = GetAllGroups(a)
-#plt.imshow(res[7][2],cmap='gray')
+#res = a.GetAllGroups()
+#plt.imshow(res[1][2],cmap='gray')
 #plt.show()
+
