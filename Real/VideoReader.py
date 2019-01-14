@@ -53,8 +53,7 @@ class VideoReader(object):
         self.n_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))  # 视频的帧数
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)  # 视频的帧率
         self.dur = self.n_frames/self.fps  # 视频的时间
-        self.opts = opts
-
+        self.opts = copy.deepcopy(opts)
         self.CheckOpts()
         if self.opts['info']:
             self.Print()
