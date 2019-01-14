@@ -1,4 +1,17 @@
 # -*- coding: utf-8 -*-
+"""
+EstablishRealDatasets.py
+
+Written by Liu Mingzhe
+
+Licensed under the MIT License (see LICENSE for details)
+
+把手机拍摄的图片自动分组、变换旋转尺寸、重命名、整理成测试数据集，
+把手机拍摄的视频自动读取、变换旋转尺寸、分组、重命名、整理成测试数据集
+
+"""
+
+
 import copy
 import os
 from glob import glob
@@ -28,7 +41,9 @@ _DEFAULT_NameAnalyzer_OPTION = {
                 # 如对于两组图片： g1_1,g1_2 ;g2_1,g2_2,g2_3
                 # 分类成 folder1:[g1_1,g1_2] ,folder2:[g2_1,g2_2,g2_3],保留g2_3
         # 对于splite 模式下的设置
-        'split_n':3 , # 设置文件夹数目，必须小于等于下面的img_min_ele_num参数
+        'split_n':3 , # 设置文件夹数目，
+            # 必须小于等于下面的img_min_ele_num参数(img模式) 或
+            # 必须小于等于下面的video_ele_num参数(video模式)
         'split_start_fileid':0, # 起始图片编号,默认是0,一般用于扩展数据集
         'split_keep_serial':False, # 是否保留图像文件的序列号，
             # 如果不保留只能通过文件夹名称来判断图像在序列中的编号
@@ -75,6 +90,7 @@ _DEFAULT_NameAnalyzer_OPTION = {
             # 'group_interval': 1  # 组内间隔
         'video_group_num': 2, # 从每个视频中提取多少组图像;如果设置为零则不使用此参数，改用
             # video_vr_opts中的interval参数（即帧间间隔）来读取
+        'video_ele_num': 3, # 一组提取的帧数,会覆盖video_vr_opts中的group_ele参数
         'video_image_dir':'default',  # 存放从视频中读取的图片的目录，
             # 默认情况下在opts['path_in'] 下的 VIDEO_IMAGE 文件夹中
         'video_image_ext':'.jpg', # 从视频中提取的临时图片的后缀名，
@@ -138,13 +154,18 @@ class NameAnalyzer(object):
         assert(opts['out_style'] in ['split','group'])
         assert(opts['processing_type'] in ['zoom','slice'])
         assert(opts['split_keep_serial_style'] in ['number','underline'])
-        assert(opts['img_min_ele_num'] >= opts['split_n'])
+        if(opts['out_style'] is 'split'):
+            if(self.dtype is 'img'):
+                assert(opts['img_min_ele_num'] >= opts['split_n'])
+            elif(self.dtype is 'video'):
+                assert(opts['video_ele_num'] >= opts['split_n'])
         assert(opts['path_in'] is not 'RAW DIR')
         assert(opts['path_out'] is not 'TARGET DIR')
         
         if(opts['video_image_dir'] is 'default'):
             opts['video_image_dir'] = os.path.join(opts['path_in'],'VIDEO_IMAGE')
 
+        opts['video_vr_opts']['group_ele'] = opts['video_ele_num']
 
     def Run(self):
         '''
@@ -168,7 +189,7 @@ class NameAnalyzer(object):
         elif self.dtype is 'video':
             self.ReadVideos()
             image_groups = self.VideoClassify()
-
+        self.image_groups = image_groups
         self.ImageGroupsProcessing(image_groups)
 
 
@@ -546,9 +567,7 @@ class NameAnalyzer(object):
             vr.PrintVideoInfo()
             image_groups_arrays = vr.GetAllGroups()
             self.SaveVideoImages(image_groups_arrays,video_name)
-            ##########
-            break
-            ##########
+
         # 询问是否暂停来检查输出是否符合预期
         if(self.opts['video_wait']):
             print('\nINFO: Video read complete ',
@@ -647,6 +666,20 @@ class NameAnalyzer(object):
             print("VideoReader opts INFO:")
             [print(f'{opt[0]}:{opt[1]}') for opt in self.opts['video_vr_opts'].items()]
 
+    def GetContinueId(self):
+        s_fileid = self.opts['split_start_fileid']
+        new_add = len(self.image_groups)
+        return int(s_fileid + new_add)
+
+    def SetContinueId(self,id_):
+        if(self.opts['out_style'] is 'split'):
+            self.opts['split_start_fileid'] = id_
+        elif(self.opts['out_style'] is 'group'):
+            self.opts['group_start_dirid'] = id_
+
+    def ContinueId(self,na):
+        self.SetContinueId(na.GetContinueId())
+
 
 def OrientationCorrection(img):
     '''
@@ -700,24 +733,24 @@ def FilesFilter(file_list,type_list = _IMGTYPE_LIST):
 #image_groups = a.img_image_groups
 
 # 视频类型
-opts = copy.deepcopy(_DEFAULT_NameAnalyzer_OPTION)
-opts['path_in']='E:/data/图片预处理/img/20190108/VIDEO/'
-opts['path_out']='../data/Real/test2/'
-opts['out_style']='split'
-opts['split_keep_serial']=True
-opts['split_keep_serial_style']= 'underline'
-opts['dir_prefix']= 'im'
-opts['dir_digits']= 0
-opts['file_digits']= 0
-opts['auto_rotate']=True
-
-vr_opts = copy.deepcopy(_DEFAULT_VideoReader_OPTION)
-vr_opts['start'] = 0.05
-vr_opts['end'] = 0.95
-opts['video_vr_opts'] = vr_opts
-opts['video_group_num'] = 1
-opts['video_wait'] = False
-
-a = NameAnalyzer('video',opts)
-a.Run()
-image_groups = a.video_image_groups
+#opts = copy.deepcopy(_DEFAULT_NameAnalyzer_OPTION)
+#opts['path_in']='E:/data/图片预处理/img/20190108/VIDEO/'
+#opts['path_out']='../data/Real/test2/'
+#opts['out_style']='split'
+#opts['split_keep_serial']=True
+#opts['split_keep_serial_style']= 'underline'
+#opts['dir_prefix']= 'im'
+#opts['dir_digits']= 0
+#opts['file_digits']= 0
+#opts['auto_rotate']=True
+#
+#vr_opts = copy.deepcopy(_DEFAULT_VideoReader_OPTION)
+#vr_opts['start'] = 0.05
+#vr_opts['end'] = 0.95
+#opts['video_vr_opts'] = vr_opts
+#opts['video_group_num'] = 1
+#opts['video_wait'] = False
+#
+#a = NameAnalyzer('video',opts)
+#a.Run()
+#image_groups = a.video_image_groups

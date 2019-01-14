@@ -4,7 +4,7 @@ VideoReader.py
 
 Written by Liu Mingzhe
 
-Modifications licensed under the MIT License 
+Licensed under the MIT License (see LICENSE for details)
 
 用于从视频中读取图像
 """
