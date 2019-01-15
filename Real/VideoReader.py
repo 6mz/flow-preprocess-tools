@@ -114,7 +114,7 @@ class VideoReader(object):
             self.current_frame += self.opts['interval']
             if self.current_frame > self.opts['end']:
                 self.end = True
-            return ( current_frame , image )
+            return ( current_frame , cv2.cvtColor(image,cv2.COLOR_BGR2RGB) )
         else:
             self.end = True
             return ( False , None )
@@ -150,7 +150,7 @@ class VideoReader(object):
         self.cap.set(cv2.CAP_PROP_POS_FRAMES , current_frame)
         success,image = self.cap.read()
         if success:
-            return ( current_frame , image )
+            return ( current_frame , cv2.cvtColor(image,cv2.COLOR_BGR2RGB)  )
         else:
             return ( False , None )
 
@@ -180,7 +180,7 @@ class VideoReader(object):
             self.cap.set(cv2.CAP_PROP_POS_FRAMES , current_group_frame)
             success,image = self.cap.read()
             if success:
-                group_frames.append(image)
+                group_frames.append(cv2.cvtColor(image,cv2.COLOR_BGR2RGB) )
                 current_group_frame += self.opts['group_interval']
                 if current_group_frame > self.opts['end']:
                     self.end = True
@@ -213,7 +213,7 @@ class VideoReader(object):
             self.cap.set(cv2.CAP_PROP_POS_FRAMES , current_group_frame)
             success,image = self.cap.read()
             if success:
-                group_frames.append(image)
+                group_frames.append(cv2.cvtColor(image,cv2.COLOR_BGR2RGB) )
                 current_group_frame += self.opts['group_interval']
                 if current_group_frame > self.opts['end']:
                     self.end = True
@@ -277,7 +277,7 @@ def GetAllFrames(VR):
         s,im = VR.GetFrame()
         if im is None:
             break
-        print(f'INFO: get Frame:{s}/{VR.n_frames}')
+        print(f'INFO:Get Frame:{s}/{VR.n_frames}')
         res.append(im)
     return res
 
@@ -295,7 +295,7 @@ def GetAllGroups(VR):
         if ims is None:
             break
         gf = VR.opts['group_interval'] * VR.opts['group_ele']
-        print(f"INFO: get Group:{s}/{VR.n_frames}\t{VR.opts['group_ele']}({gf}) frame every group")
+        print(f"INFO:Get Group:{s}/{VR.n_frames}\t{VR.opts['group_ele']}({gf}) frame every group")
         res.append(ims)
     return res
 

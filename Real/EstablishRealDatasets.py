@@ -29,39 +29,42 @@ _DEFAULT_NameAnalyzer_OPTION = {
         'height':1440, # 提取的图像高度
         'width':1080, # 提取的图像宽度
         # 输入输出路径设置
-        'path_in':'RAW DIR', # 原始文件夹
+        'path_in':'RAW DIR', # 源文件夹
         'path_out':'TARGET DIR', # 目标文件夹
         # 输出分组策略设置
-        'out_style':'group', # 输出分组策略，在['split','group']中选择一个
-            # 对于 'splite'，指定创建n个文件夹(split_n)后把每组图片相同序号的图片放在同一个文件夹中
+        'out_style':'concentrate', # 输出分组策略，在['split','group','concentrate']中选择一个
+            # 对于 'split'，指定创建n个文件夹(split_n)后把每组图片相同序号的图片放在同一个文件夹中
             # 下方的 split_n 参数用于设置文件夹数目，某组超过这个数目的其他图片会被舍弃，想保留请先人工筛选
                 # 如对于两组图片： g1_1,g1_2 ;g2_1,g2_2,g2_3
                 # 分类成 folder1:[g1_1,g2_1] ,folder2:[g1_2,g2_2],舍弃g2_3
-            # 对于 'group' ，同组图片存在同一个文件夹中，按允许不同文件夹中的图片数目不同
+                # 注意保存后将重命名
+            # 对于 'group' ，同组图片存在同一个文件夹中，允许不同文件夹中的图片数目不同
                 # 如对于两组图片： g1_1,g1_2 ;g2_1,g2_2,g2_3
                 # 分类成 folder1:[g1_1,g1_2] ,folder2:[g2_1,g2_2,g2_3],保留g2_3
-        # 对于splite 模式下的设置
+                # 注意保存后将重命名
+            # 对于 'concentrate' ，保存在同一个文件夹中，不再创建子文件夹，
+                # 因此重命名的时候自动带有组号和序列号,
+                # 编号的组位数由dir_digits确定，序列号位数由file_digits确定
+        # 对于split 模式下的设置
         'split_n':3 , # 设置文件夹数目，
             # 必须小于等于下面的img_min_ele_num参数(img模式) 或
             # 必须小于等于下面的video_ele_num参数(video模式)
-        'split_start_fileid':0, # 起始图片编号,默认是0,一般用于扩展数据集
         'split_keep_serial':False, # 是否保留图像文件的序列号，
             # 如果不保留只能通过文件夹名称来判断图像在序列中的编号
         'split_keep_serial_style':'number', # 序列号的格式,默认使用数字
             # 在['number','underline']中选择
-            #           文件夹1    文件夹2    文件夹3
-            # 不使用:     1.jpg ,   1.jpg ,   1.jpg
-            # number:  1_0.jpg , 1_1.jpg , 1_2.jpg
-            # underline: 1.jpg ,  1_.jpg , 1__.jpg
-        # 对于group 模式下的设置
-        'group_start_dirid':0 , # 起始文件夹编号
+            #            文件夹1     文件夹2     文件夹3
+            # 不使用:     g1.jpg ,   g1.jpg ,   g1.jpg
+            # number:  g1_0.jpg , g1_1.jpg , g1_2.jpg
+            # underline: g1.jpg ,  g1_.jpg , g1__.jpg
         # 文件和文件夹名称设置
+        'start_id':0 , #起始图片组编号,默认是0,一般用于扩展数据集
         'dir_prefix': '' , # 输出文件夹前缀名
         'dir_suffix': '' , # 输出文件夹后缀名
-        'dir_digits': 4,     # 输出文件夹编号位数
+        'dir_digits': 0,   # 输出文件夹编号位数
         'file_prefix': '', # 输出文件前缀名
         'file_suffix': '.jpg', # 输出文件后缀名（包含系统意义上的后缀名）
-        'file_digits': 4,    # 输出文件编号位数
+        'file_digits': 0,    # 输出文件编号位数
         # 图像处理设置
         'auto_rotate':False, # 部分手机视频图像需要旋转，在遇到长宽比倒置的情况下会执行旋转操作
         'rotate_angle': 270, # 和auto_rotate一起设置，定义旋转的角度
@@ -95,29 +98,31 @@ _DEFAULT_NameAnalyzer_OPTION = {
             # 默认情况下在opts['path_in'] 下的 VIDEO_IMAGE 文件夹中
         'video_image_ext':'.jpg', # 从视频中提取的临时图片的后缀名，
             # 注意，最终文件的后缀名由file_suffix决定
-        'video_wait':True, # 在读取完视频之后是否暂停，供手动选择图片
+        'video_wait':False, # 在读取完视频之后是否暂停，供手动选择图片
         }
 
 
+# 定义图像后缀名，img模式下，后缀名不在列表中的文件都会被忽略
+_IMGTYPE_LIST = ['jpg','bmp','png','jpeg','rgb','tif']
+# 定义视频后缀名，video模式下，后缀名不在列表中的文件都会被忽略
+_VIDTYPE_LIST = ['mp4',]
 # 原始输入类型列表
 # img:输入的是直接拍摄的序列图像
 # raw：输入的是raw格式（纯数据矩阵）图像
 # video：输入的是视频
-_NAME_FORMAT_LIST = ['img','raw','video']
-# 定义图像后缀名，img模式下，后缀名不在列表中的文件都会被忽略
-_IMGTYPE_LIST = ['jpg','bmp','png','jpeg','rgb','tif']
-
-_VIDTYPE_LIST = ['mp4',]
+_NAME_FORMAT_LIST = ['img','raw','video','img_group','img_from_video']
 # 定义从文件名中读取时间的方式
     # date表示日期,time表示时间;后面的列表中的
     # 第一项表示正则表达式的提取规则，
     # 第二项表示提取后的字符串中有效字段的起始结束位置
     # 第三项表示datatime类读取有效字段时的格式
 _DEFAULT_NAME_FORMAT = {
-        'img':{'date':['IMG_\d{8}_',(4,12),'%Y%m%d']  ,
-               'time':['_\d{6}\.'  ,(1,7) ,'%H%M%S']} ,#%f微秒
+        'img':{'date':['IMG_\d{8}_\d{6}',(4,12),'%Y%m%d']  ,
+               'time':['IMG_\d{8}_\d{6}',(14,20) ,'%H%M%S']} ,#%f微秒
         'raw':[],
         'video':{'group':[".*_g\d*_id",(0,-3),]}, # 视频不按照时间分类
+        'img_group':{'group':['\d*_',(0,-1),]},
+        'img_from_video':{'group':[".*_g\d*_id",(0,-3),]},
         }
 
 
@@ -151,7 +156,7 @@ class NameAnalyzer(object):
 
     def OptCheck(self):
         opts = self.opts
-        assert(opts['out_style'] in ['split','group'])
+        assert(opts['out_style'] in ['split','group','concentrate'])
         assert(opts['processing_type'] in ['zoom','slice'])
         assert(opts['split_keep_serial_style'] in ['number','underline'])
         if(opts['out_style'] is 'split'):
@@ -164,8 +169,9 @@ class NameAnalyzer(object):
         
         if(opts['video_image_dir'] is 'default'):
             opts['video_image_dir'] = os.path.join(opts['path_in'],'VIDEO_IMAGE')
-
         opts['video_vr_opts']['group_ele'] = opts['video_ele_num']
+        self.RefleshStartId()
+
 
     def Run(self):
         '''
@@ -184,11 +190,12 @@ class NameAnalyzer(object):
             print(f"ERROR: Dir [{self.opts['path_in']}] not exist")
             return
 
-        if self.dtype is 'img':
-            image_groups = self.ImgClassify()
+        if self.dtype in ['img' , 'img_group' , 'img_from_video']:
+            image_groups = self.ImageClassify()
         elif self.dtype is 'video':
             self.ReadVideos()
-            image_groups = self.VideoClassify()
+            image_groups = self.ImageClassify()
+
         self.image_groups = image_groups
         self.ImageGroupsProcessing(image_groups)
 
@@ -218,17 +225,18 @@ class NameAnalyzer(object):
         file_digits = self.opts['file_digits']
         s_fileid = self.opts['split_start_fileid']
         s_dirid = self.opts['group_start_dirid']
+        s_groupid = self.opts['concentrate_start_groupid']
         split_keep_serial = self.opts['split_keep_serial']
         split_keep_serial_style = self.opts['split_keep_serial_style']
         # 判断输出文件夹存不存在
         if not os.path.exists(path_out):
-            print(f"Dir {path_out} not exists , Create folder...")
+            print(f"INFO: Dir {path_out} not exists , Create folder...")
             os.makedirs(path_out)
         # 如果是分离模式，在循环外创建文件夹
-        if(out_style == 'split'):
-            print('INFO: out_style : split ')
+        print(f'\nINFO:Out_style : {out_style}')
+        if(out_style is 'split'):
+            # 文件夹数目
             split_n = self.opts['split_n']
-            
             split_dir_names = []
             for i in range(split_n):
                 ids = str(i).zfill(dir_digits)
@@ -238,12 +246,10 @@ class NameAnalyzer(object):
                     print(f"INFO: Dir {dir_name} not exists , Create folder...")
                     os.makedirs(dir_name)
                 split_dir_names.append(dir_name)
-        else:
-            print('INFO: out_style : group ')
         count = 0
         self.img_save_image_groups = []
         for gi,group in enumerate(image_groups):
-            if(out_style == 'group'):
+            if(out_style is 'group'):
                 # 组模式，给每个组创建文件夹
                 ids = str( gi + s_dirid ).zfill(dir_digits)
                 dir_name = dir_prefix + ids + dir_suffix
@@ -254,8 +260,9 @@ class NameAnalyzer(object):
             # 读取、处理、保存一组图像
             for gj,img_name in enumerate(group):
                 #如果是分离模式，一组图片数量超过上限就应停止
-                if(out_style == 'split' and gj >= split_n):
-                    print('INFO:Ignore the excess image in the group: [',os.path.basename(img_name),']')
+                if(out_style is 'split' and gj >= split_n):
+                    print('INFO:Ignore the excess image in the group: [',
+                           os.path.basename(img_name),']')
                     self.skip += 1
                     continue
                 count += 1
@@ -266,13 +273,13 @@ class NameAnalyzer(object):
                 # 对图像进行旋转缩放切片操作使得符合标准尺寸
                 img = self.ImageProcessing(img)
                 #对图像命名并保存
-                if(out_style == 'group'):
+                if(out_style is 'group'):
                     # 组模式,使用内层(组内序号)编号
                     ids = str( gj ).zfill(file_digits)
                     file_name = file_prefix + ids + file_suffix
                     # 直接使用外层循环创建的文件夹名称
                     file_name = os.path.join(dir_name,file_name)
-                else:
+                elif(out_style is 'split'):
                     # 分离模式,使用外层(组序号)编号
                     ids = str( gi + s_fileid ).zfill(file_digits)
                     # 如果设置了split_keep_serial参数，文件名除了组序号之外再加上组内序列号
@@ -283,6 +290,14 @@ class NameAnalyzer(object):
                             ids = ids + '_'*gj
                     file_name = file_prefix + ids + file_suffix
                     file_name = os.path.join(split_dir_names[gj],file_name)
+                elif(out_style is 'concentrate'):
+                    # 集中模式，不创建文件夹，同时使用两个序号
+                    suf_ids = str( gj ).zfill(file_digits)
+                    pre_ids = str( gi + s_groupid ).zfill(file_digits)
+                    ids = pre_ids + '_' + suf_ids
+                    file_name = file_prefix + ids + file_suffix
+                    file_name = os.path.join(path_out,file_name)
+
                 print('INFO:Image [',os.path.basename(img_name),
                       '] save as [',os.path.basename(file_name),
                       '] in directory [',os.path.dirname(file_name),']')
@@ -320,7 +335,7 @@ class NameAnalyzer(object):
         flag = ((hw_ratio > 1 and target_hw_ratio < 1)or
                 (hw_ratio < 1 and target_hw_ratio > 1))
         if(auto_rotate and flag):
-            print('rotate',hw_ratio,' ',target_hw_ratio)
+            print('INFO:rotate ,hw_ratio :',hw_ratio,' target_hw_ratio:',target_hw_ratio)
             img = im.rotate(rotate_angle,expand = True)
             w, h = img.size
         else:
@@ -359,40 +374,17 @@ class NameAnalyzer(object):
         return img.crop(box)
 
 
-    def ImgClassify(self):
+    def ImageClassify(self):
         '''
-        根据文件名中的时间对图像进行分组
+        根据文件名中的时间或组编号对图像进行分组
         1.获得文件夹中的所有【图像】文件,图像的后缀名列表在文件开头定义
         2.获取文件名中的时间,按时间进行分组,判断组内图像数目是否符合要求
         输入：
             无
-        输出：
-            image_groups：已经按时间分完组的列表，列表的每个元素代表一组图像
-        '''
-        # 获得文件夹中的所有图像文件
-        file_list = self.GetFiles()
-        print(f'INFO: Find {len(file_list)} Files with ',end='')
-        # 判断是不是图像格式
-        self.image_list = FilesFilter(file_list,_IMGTYPE_LIST)
-        self.img_num = len(self.image_list)
-        print(f'{self.img_num} Images')
-        # 获取文件名中的时间，按时间进行分组，判断组内图像数目是否符合要求
-        image_groups = self.ClassifyUsingDateTime(
-                self.image_list,self.opts['img_min_ele_num'])
-        self.img_image_groups = image_groups
-        return image_groups
-
-
-    def VideoClassify(self):
-        '''
-        用于对ReadVideos函数输出的图像进行分组
-        函数输入：无
         隐藏输入：
             self.opts:
-                'video_image_dir'
-                'video_vr_opts':'group_ele'
-        函数输出：
-            image_groups：分组完成后的组列表
+        输出：
+            image_groups：已经按时间分完组的列表，列表的每个元素代表一组图像
         隐藏输出：
             self.img_num
             self.image_list
@@ -400,19 +392,64 @@ class NameAnalyzer(object):
         自定义函数调用：
             self.GetFiles
             self.ClassifyUsingGroupId
+            self.ClassifyUsingDateTime
         '''
-        # 
-        dir_path = self.opts['video_image_dir']
-        file_list = self.GetFiles(dir_path)
-        print(f'INFO: Find {len(file_list)} Files with ',end='')
+        # 获得文件夹中的所有图像文件
+        if (self.dtype is 'video'):
+            file_list = self.GetFiles(self.opts['video_image_dir'])
+        else:
+            file_list = self.GetFiles()
+
+        print(f'INFO:Find {len(file_list)} Files with ',end='')
         # 判断是不是图像格式
         self.image_list = FilesFilter(file_list,_IMGTYPE_LIST)
         self.img_num = len(self.image_list)
         print(f'{self.img_num} Images')
-        image_groups = self.ClassifyUsingGroupId(
-                self.image_list ,self.opts['video_vr_opts']['group_ele'])
-        self.video_image_groups = image_groups
+        # 获取文件名中的时间，按时间进行分组，判断组内图像数目是否符合要求
+        if(self.dtype is 'img'):
+            image_groups = self.ClassifyUsingDateTime(
+                    self.image_list,self.opts['img_min_ele_num'])
+        elif(self.dtype in ['img_group' , 'img_from_video']):
+            image_groups = self.ClassifyUsingGroupId(
+                    self.image_list,self.opts['img_min_ele_num'])
+        elif(self.dtype is 'video'):
+            image_groups = self.ClassifyUsingGroupId(
+                self.image_list ,self.opts['video_ele_num'])
+
+        self.img_image_groups = image_groups
         return image_groups
+
+
+#    def VideoClassify(self):
+#        '''
+#        用于对ReadVideos函数输出的图像进行分组
+#        函数输入：无
+#        隐藏输入：
+#            self.opts:
+#                'video_image_dir'
+#                'video_vr_opts':'group_ele'
+#        函数输出：
+#            image_groups：分组完成后的组列表
+#        隐藏输出：
+#            self.img_num
+#            self.image_list
+#            self.video_image_groups
+#        自定义函数调用：
+#            self.GetFiles
+#            self.ClassifyUsingGroupId
+#        '''
+#        # 
+#        dir_path = self.opts['video_image_dir']
+#        file_list = self.GetFiles(dir_path)
+#        print(f'INFO: Find {len(file_list)} Files with ',end='')
+#        # 判断是不是图像格式
+#        self.image_list = FilesFilter(file_list,_IMGTYPE_LIST)
+#        self.img_num = len(self.image_list)
+#        print(f'{self.img_num} Images')
+#        image_groups = self.ClassifyUsingGroupId(
+#                self.image_list ,self.opts['video_ele_num'])
+#        self.video_image_groups = image_groups
+#        return image_groups
 
 
     def ClassifyUsingDateTime(self,image_list,min_ele = 1):
@@ -453,20 +490,18 @@ class NameAnalyzer(object):
                 # 判断组内图像数目是否符合要求
                 if(len(current_group) >= min_ele ):
                     image_groups.append(current_group)
-                else:
+                elif(len(current_group) >= 1):
                     ignore_group = list(map(os.path.basename,current_group))
-                    print(f'INFO:Insufficient number of images in group,\
-                          ignore images {ignore_group}')
+                    print(f'INFO:Insufficient number of images in group,ignore images {ignore_group}')
                     self.skip += len(ignore_group)
                 # 初始化新组
                 current_group = [image_name]
         # 处理最后一组
         if(len(current_group) >= min_ele):
             image_groups.append(current_group)
-        else:
+        elif(len(current_group) >= 1):
             ignore_group = list(map(os.path.basename,current_group))
-            print(f'INFO:Insufficient number of images in group,\
-                  ignore images {ignore_group}')
+            print(f'INFO:Insufficient number of images in group,ignore images {ignore_group}')
             self.skip += len(ignore_group)
         return image_groups
 
@@ -513,10 +548,9 @@ class NameAnalyzer(object):
                 # 判断组内元素数量是否充足
                 if(len(current_group) >= min_ele):
                     image_groups.append(current_group)
-                else:
+                elif(len(current_group) >= 1):
                     ignore_group = list(map(os.path.basename,current_group))
-                    print(f'INFO:Insufficient number of images in group,\
-                          ignore images {ignore_group}')
+                    print(f'INFO:Insufficient number of images in group,ignore images {ignore_group}')
                     self.skip += len(ignore_group)
                 # 更新
                 current_group_name = group_name
@@ -524,11 +558,11 @@ class NameAnalyzer(object):
         # 处理最后一组
         if(len(current_group) >= min_ele):
             image_groups.append(current_group)
-        else:
-                ignore_group = list(map(os.path.basename,current_group))
-                print(f'INFO:Insufficient number of images in group,\
-                      ignore images {ignore_group}')
-                self.skip += len(ignore_group)
+        elif(len(current_group) >= 1):
+            ignore_group = list(map(os.path.basename,current_group))
+            print(f'INFO:Insufficient number of images in group,\
+                  ignore images {ignore_group}')
+            self.skip += len(ignore_group)
         return image_groups
 
 
@@ -549,11 +583,11 @@ class NameAnalyzer(object):
         '''
         # 获得文件夹中的所有视频文件
         file_list = self.GetFiles()
-        print(f'INFO: Find {len(file_list)} Files with ',end='')
+        print(f'INFO:Find {len(file_list)} Files with ',end='')
         # 判断是不是视频格式
         self.video_list = FilesFilter(file_list,_VIDTYPE_LIST)
         self.video_num = len(self.video_list)
-        print(f'{ len(self.video_list)} Videos')
+        print(f'{len(self.video_list)} Videos')
         # 在源文件目录下创建存放源图像文件的目录，此目录及其中的文件会被保留
         video_image_dir = self.opts['video_image_dir']
         if not os.path.exists(video_image_dir):
@@ -570,7 +604,7 @@ class NameAnalyzer(object):
 
         # 询问是否暂停来检查输出是否符合预期
         if(self.opts['video_wait']):
-            print('\nINFO: Video read complete ',
+            print('\nINFO:Video read complete ',
                   f', Please check the pictures in folder {video_image_dir} ',
                   ',input Y or y to continue')
             while(True):
@@ -597,7 +631,7 @@ class NameAnalyzer(object):
                 image = Image.fromarray(image_array)
                 image.save(image_name)
                 count += 1
-        print(f'INFO: video [{video_name_}] output {count}({len(image_groups_arrays)}) images')
+        print(f'INFO:Video [{video_name_}] output {count}({len(image_groups_arrays)}) images')
 
 
     def GetFiles(self,img_dir = None):
@@ -606,7 +640,7 @@ class NameAnalyzer(object):
         '''
         img_dir = self.opts['path_in'] if img_dir is None else img_dir
         if not os.path.exists(img_dir):
-            print(f'Dir [{img_dir}] not exist')
+            print(f'INFO:Dir [{img_dir}] not exist')
             return []
         file_list = sorted(glob(os.path.join(img_dir, '*')))
         self.raw_files_num = len(file_list)
@@ -667,19 +701,46 @@ class NameAnalyzer(object):
             [print(f'{opt[0]}:{opt[1]}') for opt in self.opts['video_vr_opts'].items()]
 
     def GetContinueId(self):
-        s_fileid = self.opts['split_start_fileid']
+        id_ = self.opts['start_id']
         new_add = len(self.image_groups)
-        return int(s_fileid + new_add)
+        return int(id_ + new_add)
+#        if(self.opts['out_style'] is 'split'):
+#            s_fileid = self.opts['split_start_fileid']
+#            new_add = len(self.image_groups)
+#            return int(s_fileid + new_add)
+#        elif(self.opts['out_style'] is 'group'):
+#            s_dirid = self.opts['group_start_dirid']
+#            new_add = len(self.image_groups)
+#            return int(s_dirid + new_add)
+#        elif(self.opts['out_style'] is 'concentrate'):
+#            s_groupid = self.opts['concentrate_start_groupid']
+#            new_add = len(self.image_groups)
+#            return int(s_groupid + new_add)
+
 
     def SetContinueId(self,id_):
-        if(self.opts['out_style'] is 'split'):
-            self.opts['split_start_fileid'] = id_
-        elif(self.opts['out_style'] is 'group'):
-            self.opts['group_start_dirid'] = id_
+        self.opts['start_id'] = id_
+        self.RefleshStartId()
+#        if(self.opts['out_style'] is 'split'):
+#            self.opts['split_start_fileid'] = id_
+#        elif(self.opts['out_style'] is 'group'):
+#            self.opts['group_start_dirid'] = id_
+#        elif(self.opts['out_style'] is 'concentrate'):
+#            self.opts['concentrate_start_groupid'] = id_
+
 
     def ContinueId(self,na):
+        # 从上一个类继续编号
         self.SetContinueId(na.GetContinueId())
 
+
+    def RefleshStartId(self):
+        #'split_start_fileid':0, # 起始图片组编号,默认是0,一般用于扩展数据集(同start_id)
+        #'group_start_dirid':0 , # 起始文件夹（组）编号   (同start_id)
+        # 'concentrate_start_groupid':0, # 起始组编号   (同start_id)
+        self.opts['group_start_dirid'] = self.opts['start_id']
+        self.opts['concentrate_start_groupid'] = self.opts['start_id']
+        self.opts['split_start_fileid'] = self.opts['start_id']
 
 def OrientationCorrection(img):
     '''
