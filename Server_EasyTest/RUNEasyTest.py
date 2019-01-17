@@ -31,10 +31,11 @@ def NogtTest(rundir,datasets_path,ltype,ltype2,num):
     save_list('commend.txt',[commend])
     print('OUTPUT TXTS: commend.txt IN Current Folder AND ' + et.runDir)
     et.MovePics(gt=False)
-    print("由于python3不能调用python2,请在程序挂起期间后到python2环境下执行 commend.py 或 commend.txt 运行PWC-Net\n ")
-    ask('是否完成？',flag=1)
+    subprocess.call(['python','commend.py'])
+#    print("由于python3不能调用python2,请在程序挂起期间后到python2环境下执行 commend.py 或 commend.txt 运行PWC-Net\n ")
+#    ask('是否完成？',flag=1)
     et.VizFlows(outFlow='g',resFlow='g')
-    et.GenWarp('nW','wO','wOm')
+    et.GenWarp('w','wo','wom','nw','nwo')
 
 
 def FullTest(rundir,datasets_path,ltype,ltype2,num):
@@ -50,8 +51,9 @@ def FullTest(rundir,datasets_path,ltype,ltype2,num):
     print('OUTPUT TXTS: commend.txt IN Current Folder AND ' + et.runDir)
     et.MovePics()
     et.VizFlows(outFlow='g',resFlow='g',gtFlow='d')
-    print("由于python3不能调用python2,请在程序挂起期间到python2环境下执行 commend.py 或 commend.txt 运行PWC-Net\n ")
-    ask('是否完成？',flag=1)
+    subprocess.call(['python','commend.py'])
+#    print("由于python3不能调用python2,请在程序挂起期间到python2环境下执行 commend.py 或 commend.txt 运行PWC-Net\n ")
+#    ask('是否完成？',flag=1)
     et.GenSparLists(num)
     et.GenerateSparplots()
     et.VizFlows(bestFlow='d')
@@ -70,8 +72,9 @@ def FullTest_FromTxt(rundir,num):
     print('OUTPUT TXTS: commend.txt IN Current Folder AND ' + et.runDir)
     et.MovePics()
     et.VizFlows(outFlow='g',resFlow='g',gtFlow='d')
-    print("由于python3不能调用python2,请在程序挂起期间到python2环境下执行 commend.py 或 commend.txt 运行PWC-Net\n ")
-    ask('是否完成？',flag=1)
+    subprocess.call(['python','commend.py'])
+#    print("由于python3不能调用python2,请在程序挂起期间到python2环境下执行 commend.py 或 commend.txt 运行PWC-Net\n ")
+#    ask('是否完成？',flag=1)
     et.GenSparLists(num)
     et.GenerateSparplots()
     et.VizFlows(bestFlow='d')
@@ -90,13 +93,13 @@ def NogtTest_AllFromTxt(rundir,num):
 if '__main__' == __name__:
     my_dir = os.path.dirname(os.path.realpath(__file__))
     os.chdir(my_dir) 
-    rundir = './data/real_test_warp'
-    datasets_path='/home/a/public1/flow/data/test/real20181127/pic'
+    rundir = './data/test1'
+    datasets_path='/4T_/flow/testSet/img_group/'
     ltype = 'Real'
     ltype2 = None
-    num = 50
+    num = 118
 
     #NogtTest(rundir,datasets_path,ltype,ltype2,num)
-    #FullTest(rundir,datasets_path,ltype,ltype2,num)#gt
+    NogtTest(rundir,datasets_path,ltype,ltype2,num)#gt
     #FullTest2(rundir,num)#gt
-    NogtTest_AllFromTxt(rundir,num)
+    #NogtTest_AllFromTxt(rundir,num)

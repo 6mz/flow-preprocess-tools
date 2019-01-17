@@ -355,7 +355,11 @@ class EasyTest(object):
                 A_warp = warp_easy(A,flow)
             if('newWarp' in keys or 'newWarpOverlay' in keys or 
                'newWarpOverlayUsingMask' in keys):
-                A_Nwarp = WarpNotEasy(A,flow)
+                res = WarpNotEasy(A,flow,B)
+                if len(res)==2:
+                    A_Nwarp,A_Nwarp_mask = res 
+                else:
+                    A_Nwarp = res
             print('\r',str(i),'/',str(len(flow_list)),end='')
             for key in keys:
                 O_name = self.warpPics[key][i]

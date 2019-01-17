@@ -75,6 +75,6 @@ def open_flo_file(filename):
         else:
             w = np.fromfile(f, np.int32, count=1)
             h = np.fromfile(f, np.int32, count=1)
-            data = np.fromfile(f, np.float32, count=2*w*h)
+            data = np.fromfile(f, np.float32, count=2*w[0]*h[0])
             # Reshape data into 3D array (columns, rows, bands)
             return np.resize(data, (h[0], w[0], 2))

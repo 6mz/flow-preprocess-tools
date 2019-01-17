@@ -335,7 +335,7 @@ class NameAnalyzer(object):
         flag = ((hw_ratio > 1 and target_hw_ratio < 1)or
                 (hw_ratio < 1 and target_hw_ratio > 1))
         if(auto_rotate and flag):
-            print('INFO:rotate ,hw_ratio :',hw_ratio,' target_hw_ratio:',target_hw_ratio)
+            print('INFO:Rotate ,hw_ratio :',hw_ratio,' target_hw_ratio:',target_hw_ratio)
             img = im.rotate(rotate_angle,expand = True)
             w, h = img.size
         else:
@@ -400,7 +400,7 @@ class NameAnalyzer(object):
         else:
             file_list = self.GetFiles()
 
-        print(f'INFO:Find {len(file_list)} Files with ',end='')
+        print(f'INFO:\nFind {len(file_list)} Files with ',end='')
         # 判断是不是图像格式
         self.image_list = FilesFilter(file_list,_IMGTYPE_LIST)
         self.img_num = len(self.image_list)

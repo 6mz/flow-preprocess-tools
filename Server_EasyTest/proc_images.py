@@ -14,9 +14,9 @@ from viz_flow import viz_flow, warp_easy
 
 
 # Please modify to your local caffe directory
-caffe_bin = '/home/a/public/yyy_/flow/flownet2/build/tools/caffe.bin'
+caffe_bin = '/4T_/yuyy/flow/flownet2_/build/tools/caffe'
 
-gpu_id = 1
+gpu_id = 2
 
 # =========================================================
 def evaluate_model(template, model_filename, img1_filename, img2_filename, save_filenames, vis_save_filenames, warp_save_filenames, scale_ratio=1.0):
@@ -99,15 +99,15 @@ def evaluate_model(template, model_filename, img1_filename, img2_filename, save_
             filename_=filename_+'_res'+extension_
             os.system ("mv  %s %s" % (flow_fn, save_filenames[ifile]) )
             os.system ("mv  %s %s" % (flow_fn_res, os.path.join(filepath_,filename_)) )
-    if save_filenames != None and warp_save_filenames != None:
-        assert(len(save_filenames)==len(warp_save_filenames))
-        assert(len(images1)==len(save_filenames))
-        for i in range(len(save_filenames)):
-            im_1=imread(images1[i])
-            # im_2=imread(images2[i])
-            flow_=open_flo_file(save_filenames[i])
-            warped=warp_easy(im_1,flow_)
-            imsave(warp_save_filenames[i],warped)
+#    if save_filenames != None and warp_save_filenames != None:
+#        assert(len(save_filenames)==len(warp_save_filenames))
+#        assert(len(images1)==len(save_filenames))
+#        for i in range(len(save_filenames)):
+#            im_1=imread(images1[i])
+#            # im_2=imread(images2[i])
+#            flow_=open_flo_file(save_filenames[i])
+#            warped=warp_easy(im_1,flow_)
+#            imsave(warp_save_filenames[i],warped)
 
 ###################
 my_dir = os.path.dirname(os.path.realpath(__file__))

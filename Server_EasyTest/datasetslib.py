@@ -232,12 +232,11 @@ class Real_list(object):#for pics from videos 1,2,3,4,5
 
 
 class Real_pair_list(object):# for pair pics 1A,1B,2A,2B
-    def __init__(self, root = '', dstype = None ):
+    def __init__(self, root = '', dstype = ['A','B'] ):
         self.image_list = []
         self.is_empty=False
-
-        imageA_list = sorted(glob(join(root, 'A/*.jpg')))
-        imageB_list = sorted(glob(join(root, 'B/*.jpg')))
+        imageA_list = sorted(glob(join(root, dstype[0]+'/*.jpg')))
+        imageB_list = sorted(glob(join(root, dstype[1]+'/*.jpg')))
 
         self.image_list = list(zip(imageA_list,imageB_list))
         self.size = len(self.image_list)
