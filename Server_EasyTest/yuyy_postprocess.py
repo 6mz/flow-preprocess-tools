@@ -236,8 +236,10 @@ def warp_judge(im, flow, im2, mode='replace'):
             # mask_small = np.uint8(mask_small)
             mask_big_twice = mask_big_twice[:, :, np.newaxis]
             mask_big_twice = mask_big_twice.repeat(3, axis=2)
-            warp[mask_big_twice>0] = im2[mask_big_twice>0]
-            returned_warp = np.uint8((warp+im2)/2.)
+            returned_warp = warp
+            mask_big_twice = mask_big_twice.astype(np.bool)
+#            warp[mask_big_twice>0] = im2[mask_big_twice>0]
+#            returned_warp = np.uint8((warp+im2)/2.)
 
     # return warp.astype(np.uint8), mask_big_twice
     return returned_warp, mask_big_twice
