@@ -15,7 +15,7 @@ from myflowlib import Sparplot,EPE,EPE_usingmask,abs_flow,viz_flow
 from myflowlib import warp_easy,WarpNotEasy
 from datasetslib import Randomlist
 
-
+# 用于省去重新计算光流，测试warp算法用（mask的比率）
 def GenAndSaveWarp(A_list,B_list,flow_list,save_dir):
     ids = [str(id_) for id_ in range(len(A_list))]
     ratios =[]

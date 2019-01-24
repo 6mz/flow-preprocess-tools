@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-class point(object):
+from copy import deepcopy
+class Point(object):
     def __init__(self,x,y=None):
-        if(None == y):
+        if(isinstance(x,Point)):
+            self.x = x.x
+            self.y = x.y
+            self.i = x.i
+            self.j = x.j
+        elif(None == y):
             self.x = x[0]
             self.y = x[1]
             self.i = x[1]
@@ -17,11 +23,11 @@ class point(object):
     def __add__(self, other):
         x = self.x+other[0]
         y = self.y+other[1]
-        return point(x,y)
+        return Point(x,y)
     def __radd__(self, other):
         x = other[0] + self.x
         y = other[1] + self.y
-        return point(x,y)
+        return Point(x,y)
     def __sub__(self,other):
         x = self.x-other[0]
         y = self.y-other[1]
@@ -33,7 +39,7 @@ class point(object):
     def __mul__(self, num):
         x = self.x * num
         y = self.y * num
-        return point(x,y)
+        return Point(x,y)
     def __str__(self):
         return ' x:%s,y:%s '%(self.x,self.y)
     def __repr__(self):
@@ -44,3 +50,5 @@ class point(object):
         return self.x < other.x and self.y < other.y
     def __gt__(self,other):
         return self.x > other.x and self.y > other.y
+    def __call__(self):
+        return deepcopy(self)
