@@ -2,9 +2,11 @@
 """
 
 """
-import datasets_lib.mynumpy as m
-from datasets_lib.Rect import Rect
+#import sys
+#sys.path.append('.')
+import mynumpy as m
+import datasets_lib1 as lib 
 
 
-a = Point((1,2))
+a = lib.Point((1,2))
 print(a)
