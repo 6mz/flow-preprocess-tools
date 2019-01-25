@@ -3,6 +3,8 @@ import numpy as np
 from copy import deepcopy
 import mynumpy as m
 
+
+###################################################################
 class Point(object):
     def __init__(self,x,y=None):
         if(isinstance(x,Point)):
@@ -55,6 +57,7 @@ class Point(object):
     def __call__(self):
         return deepcopy(self)
 
+###################################################################
 
 class Rect(object):
     '''
@@ -68,6 +71,7 @@ class Rect(object):
         '''
         if(isinstance(rectPos_Or_Rect,Point)):
             self.rectPosPoint = rectPos_Or_Rect
+            assert(len(rectSize)==2 and rectSize[0]>0 and rectSize[1]>0)
             self.rectSize = np.array(rectSize,dtype = np.int)
         elif(isinstance(rectPos_Or_Rect,Rect)):
             self.rectPosPoint = rectPos_Or_Rect.rectPosPoint
@@ -77,36 +81,73 @@ class Rect(object):
         return (self.rectSize[0],self.rectSize[1])
 
     def central(self):
+        # 中心点
         return Point(self.rectPosPoint + self.rectSize/2)
 
+    def diaCorner(self):
+        # 对角点
+        return Point(self.rectPosPoint + self.rectSize)
 
-#class RectArray(Rect):
-#    def __init__(self,rect,data=None):
-#        '''
-#        输入：
-#            rect
-#            data
-#        '''
-#        if(isinstance(rect,Rect)):
-#            if(data is not None):
-#                assert(m.shape(data) == rect.shape())
-#                self.data = data
-#            else:
-#                self.data = None
-#        super(RectArray, self).__init__(rect)
+    def allCorners(self):
+        # 所有角点，顺序：
+        # 12
+        # 43
+        corner1 = self.rectPosPoint
+        corner2 = corner1 + (self.rectSize[0],0)
+        corner3 = self.diaCorner()
+        corner4 = corner1 + (0,self.rectSize[1])
+        return (corner1,corner2,corner3,corner4)
 
+
+    def __str__(self):
+        return ' rectPosPoint:%s,rectSize:%s '%(
+                self.rectPosPoint,self.rectSize)
+    def __call__(self):
+        return deepcopy(self)
+
+    def __eq__(self,other):
+        assert isinstance(other,Rect)
+        return self.rectPosPoint == other.rectPosPoint and \
+               (self.rectSize == other.rectSize).all()
+
+###################################################################
+
+class RectArray(object):
+    def __init__(self,rect,dim3 = 3, dtype = np.uint8):
+        '''
+        '''
+        assert(isinstance(rect,Rect))
+        self.rectArray = m.zeros3(rect.shape(),dim3,dtype)
+        self.dtype = dtype
+        self.rect = rect
+
+    def AddColor(self,color=[255,255,255]):
+        assert(self.rectArray.shape[2] == 3)
+        for i in range(3):
+            self.rectArray[:,:,i] = color[i]
+        return self.rectArray
+
+    def SetValue(self,value):
+        for i in range(self.rectArray.shape[2]):
+            self.rectArray[:,:,i] = value
+        return self.rectArray
+
+###################################################################
 
 class Obj(object):
-    def __init__(self):
+    def __init__(self,data,dataMask):
         '''
         创建对象
         '''
+        assert isinstance(data,RectArray) and isinstance(dataMask,RectArray)
+        assert dataMask.dtype == np.bool
+        assert data.rect == dataMask.rect
         self.rectBorder = None
-        self.dataMask = None
-        self.data = None
+        self.dataMask = dataMask
+        self.data = data
 
 
-
+###################################################################
 
 class Trans(object):
     def __init__(self,objA):
@@ -119,7 +160,7 @@ class Trans(object):
         self.flowB = None
         self.flowAmask = None
         self.flowBmask = None
-        self.transMatrix = np.zeros((3,3),dtype = np.float)
+        self.transMatrix = np.zeros2((3,3),dtype = np.float)
 
     def GenTransMatrix(self,type_,trans_opts):
         pass
@@ -127,7 +168,7 @@ class Trans(object):
     def ImposeTransMatrix(self):
         pass
 
-
+###################################################################
 
 
 ### test
@@ -135,5 +176,5 @@ if __name__ == '__main__':
     d = Point(10,5)
     a = Rect(Point(10,5),[3,4])
     b = a.central()
-    c = m.ones([3,4])
+    c = m.ones2([3,4])
     print(d)

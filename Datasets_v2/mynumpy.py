@@ -5,10 +5,13 @@
 
 import numpy as np
 
-def zeros(size,dtype = np.float):
+def zeros2(size,dtype = np.float):
     return np.zeros((size[1],size[0]),dtype=dtype)
 
-def ones(size,dtype = np.float):
+def zeros3(size,dim3 = 3,dtype = np.float):
+    return np.zeros((size[1],size[0],dim3),dtype=dtype)
+
+def ones2(size,dtype = np.float):
     return np.zeros((size[1],size[0]),dtype=dtype)
 
 def shape(numpyarray):
