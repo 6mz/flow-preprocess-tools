@@ -18,6 +18,6 @@ def ones2(size, dtype=np.float):
     return np.zeros((size[1], size[0]), dtype=dtype)
 
 
-def shape(numpyarray):
+def shape2(numpyarray):
     s = numpyarray.shape
     return (s[1], s[0])

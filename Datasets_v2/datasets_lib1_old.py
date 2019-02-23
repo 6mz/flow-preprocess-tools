@@ -43,18 +43,12 @@ class Point(object):
     def __sub__(self, other):
         x = self.x - other[0]
         y = self.y - other[1]
-        if(isinstance(other, Point)):
-            return np.array([x, y])
-        else:
-            return Point(x, y)
+        return np.array([x, y])
 
     def __rsub__(self, other):
         x = other[0] - self.x
         y = other[1] - self.y
-        if(isinstance(other, Point)):
-            return np.array([x, y])
-        else:
-            return Point(x, y)
+        return np.array([x, y])
 
     def __mul__(self, num):
         x = self.x * num
@@ -99,7 +93,7 @@ class Rect(object):
         '''
         if(isinstance(rectPos_Or_Rect, Point)):
             self.rectPosPoint = rectPos_Or_Rect()
-            assert(len(rectSize) == 2 and rectSize[0] >= 0 and rectSize[1] >= 0)
+            assert(len(rectSize) == 2 and rectSize[0] > 0 and rectSize[1] > 0)
             self.rectSize = np.array(rectSize, dtype=np.int)
         elif(isinstance(rectPos_Or_Rect, Rect)):
             rect = rectPos_Or_Rect()
@@ -130,10 +124,6 @@ class Rect(object):
     def CvRect(self):
         return (np.int(self.rectPosPoint[0]), np.int(self.rectPosPoint[1]),
                 np.int(self.rectSize[0]), np.int(self.rectSize[1]))
-
-    def Move(self,dis):
-        self.rectPosPoint = self.rectPosPoint + dis
-
 
     def __str__(self):
         return ' rectPosPoint:%s,rectSize:%s ' % (
@@ -195,18 +185,32 @@ class RectArray(object):
             self.rectData[:, :, i] = value
         return self.rectData
 
-    def AddRectArray(self, rectArray, CSYS='local', check=True):
-        assert (isinstance(rectArray, RectArray))
-        rect = rectArray.rect()  # 副本便于修改
-        rectData = rectArray.rectData
-        LF_AddRectArray(self.rect, self.rectData, rect, rectData,
-                            CSYS=CSYS, check=check)
+    def AddRectArray(self, rectArray, check=True):
+        if(check):
+            self.AddRectArray_v1(rectArray)
+        else:
+            self.AddRectArray_v2(rectArray)
 
-    def __AddRectArray_v2(self, rect, rectData):
-        x1 = rect.rectPosPoint.x
-        y1 = rect.rectPosPoint.y
-        x2 = rect.DiaCorner().x
-        y2 = rect.DiaCorner().y
+    def AddRectArray_v1(self, rectArray):
+        assert (isinstance(rectArray, RectArray))
+        assert (rectArray.rect < self.rect)
+        assert (rectArray.rect.rectPosPoint >= Point([0, 0]))
+        assert (rectArray.rect.DiaCorner() <= Point(self.rect.shape()))
+        assert (rectArray.rectData.shape[2] == self.rectData.shape[2])
+        x1 = rectArray.rect.rectPosPoint.x
+        y1 = rectArray.rect.rectPosPoint.y
+        x2 = rectArray.rect.DiaCorner().x
+        y2 = rectArray.rect.DiaCorner().y
+        self.rectData[x1:x2, y1:y2] = rectArray.rectData
+        return self.rectData
+
+    def AddRectArray_v2(self, rectArray):
+        assert (isinstance(rectArray, RectArray))
+        assert (rectArray.rectData.shape[2] == self.rectData.shape[2])
+        x1 = rectArray.rect.rectPosPoint.x
+        y1 = rectArray.rect.rectPosPoint.y
+        x2 = rectArray.rect.DiaCorner().x
+        y2 = rectArray.rect.DiaCorner().y
 #        ix1 = np.maximum(0, x1)
 #        iy1 = np.maximum(0, y1)
 #        ix2 = np.minimum(x2, self.rect.shape()[0])
@@ -217,39 +221,6 @@ class RectArray(object):
     def __call__(self):
         return deepcopy(self)
 
-
-def LF_AddRectArray(rect1, rectData1, rect2, rectData2,
-                    CSYS='local', check=True, mask=None):
-    # 这里的叠加使用的是相对坐标，即叠加矩阵的坐标原点是被叠加矩阵的左上角点
-    # 如果叠加矩阵的坐标是全局坐标，全局坐标会被变换为相对坐标参与计算
-    assert CSYS in ['local', 'global']
-    assert (rectData1.shape[2] == rectData2.shape[2])
-    if('global' == CSYS):
-        p1 = rect1.rectPosPoint
-        dis = [-p1.x, -p1.y]
-        rect2.Move(dis)
-    if(check):
-        LF_AddRectArray_v1(rect1, rectData1, rect2, rectData2, mask)
-    else:
-        pass
-
-
-def LF_AddRectArray_v1(rect1, rectData1, rect2, rectData2, mask=None):
-    assert (rect2 <= rect1)
-    if ((rect2.rectPosPoint < Point([0, 0])) or
-            (rect2.DiaCorner() > Point(rect1.shape()))):
-        print('WARNING： LF_AddRectArray_v1: rect2 is out of range')
-        return rectData1
-    x1 = rect2.rectPosPoint.x
-    y1 = rect2.rectPosPoint.y
-    x2 = rect2.DiaCorner().x
-    y2 = rect2.DiaCorner().y
-    if mask is not None:
-        assert (mask.shape[0:2] == rectData2.shape[0:2])
-        rectData1[x1:x2, y1:y2][mask] = rectData2[mask]
-    else:
-        rectData1[x1:x2, y1:y2] = rectData2
-    return rectData1
 ###################################################################
 
 
@@ -268,36 +239,18 @@ class Obj(object):
             data_temp = data
             dataMask_temp = dataMask
         self.rect = data_temp.rect
-        self.rectData = data_temp.rectData
-        self.rectDataMask = dataMask_temp.rectData
+        self.data = data_temp.rectData
+        self.dataMask = dataMask_temp.rectData
         self.rectBorder = None
         self.FindRectBorder()
 
     def FindRectBorder(self):
-        mask = np.uint8(self.rectDataMask)
+        mask = np.uint8(self.dataMask)
         rect = cv2.boundingRect(mask)
         self.rectBorder = Rect(Point(rect[0], rect[1]) +
                                self.rect.rectPosPoint,
                                (rect[2], rect[3])
                                )
-
-    def AddObj(self, obj, CSYS='local', check=True):
-        assert CSYS in ['local', 'global']
-        assert (isinstance(obj, Obj))
-        LF_AddRectArray(self.rect, self.rectData, obj.rect, obj.rectData,
-                        CSYS=CSYS, check=check, mask=obj.Mask())
-
-    def Mask(self):
-        # 把1个通道的mask复制成N个通道的mask
-        mask = self.rectDataMask
-        shape = self.rectData.shape
-        mask = mask.repeat(shape[2])
-        mask = mask.reshape(shape)
-        return mask
-
-
-    def __call__(self):
-        return deepcopy(self)
 
 
 ###################################################################
@@ -320,10 +273,6 @@ class Trans(object):
 
 
 def GenTransMatrix(self, type_=None, trans_opts=None):
-    # 抽象input：平移，旋转，其他（随机）
-    # 抽象out：4点对
-    # input：4点，4点
-    # output：M
     return np.eyes(3, dtype=np.float)
 
 ###################################################################
@@ -333,13 +282,10 @@ class Board(object):
     def __init__(self, size):
         self.TransLists = []
         self.boardRect = Rect(Point(0, 0), size)
-        background = RectArray(self.boardRect, dtype=np.uint8)
-        backgroundFlow = RectArray(self.boardRect, dtype=np.float)
-        backgroundMask = RectArray(self.boardRect, 1, dtype=np.bool)
-        self.imA = Obj(background, backgroundMask)
-        self.imB = Obj(background, backgroundMask)
-        self.flowA = Obj(backgroundFlow, backgroundMask)
-        self.flowB = Obj(backgroundFlow, backgroundMask)
+        self.imA = RectArray(self.boardRect, dtype=np.uint8)
+        self.imB = RectArray(self.boardRect, dtype=np.uint8)
+        self.flowA = RectArray(self.boardRect, dtype=np.float)
+        self.flowB = RectArray(self.boardRect, dtype=np.float)
         # levellists
 
     def addTrans(self, trans):
@@ -348,8 +294,8 @@ class Board(object):
 
     def Gen(self):
         for trans in self.TransLists:
-            test_temp = trans.obj_imA
-            self.imA.AddObj(test_temp)
+            test_temp = trans.obj_imA.data
+            self.imA.AddRectArray(test_temp)
 
     def Display(self, *lists):
         # assert lists in ['imA', 'imB', 'flowA', 'flowB']

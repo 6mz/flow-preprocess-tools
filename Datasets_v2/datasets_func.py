@@ -46,3 +46,4 @@ def RandomPoint(minPoint, maxPoint):
     x = np.random.random_integers(minx, maxx)
     y = np.random.random_integers(miny, maxy)
     return Point(x, y)
+
