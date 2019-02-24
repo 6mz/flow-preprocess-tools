@@ -36,11 +36,13 @@ obj1_datamask.AddRectArray(obj1_true_datamask, CSYS='global')
 
 obj1 = Obj(obj1_data, obj1_datamask)
 trans = Trans(obj1)
+pts = trans.GenTrans('py')
+trans.ImposeTrans(pts)
 #DisplayObject(obj1)
-mainboard = Board([640, 480])
-mainboard.addTrans(trans)
-mainboard.Gen()
-mainboard.Display('imA')
+#mainboard = Board([640, 480])
+#mainboard.addTrans(trans)
+#mainboard.Gen()
+#mainboard.Display('imA')
 
 #print(obj1)
 #look = obj1.data_
