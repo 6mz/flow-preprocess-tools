@@ -6,7 +6,6 @@ import cv2
 
 import mynumpy as m
 
-
 ###################################################################
 class Point(object):
     def __init__(self, x, y=None):
@@ -25,6 +24,9 @@ class Point(object):
             self.y = y
             self.i = y
             self.j = x
+
+    def Array(self):
+        return np.array([self.x, self.y])
 
     def __getitem__(self, key):
         # p[0] or p[1]
@@ -123,17 +125,25 @@ class Rect(object):
         # 43
         corner1 = self.rectPosPoint
         corner2 = corner1 + (self.rectSize[0], 0)
-        corner3 = self.diaCorner()
+        corner3 = self.DiaCorner()
         corner4 = corner1 + (0, self.rectSize[1])
         return (corner1, corner2, corner3, corner4)
+
+    def CvAllCorners(self):
+        corners = self.AllCorners()
+        pts = np.float32([corners[0].Array(),
+                          corners[1].Array(),
+                          corners[3].Array(),
+                          corners[2].Array()
+                          ])
+        return pts
 
     def CvRect(self):
         return (np.int(self.rectPosPoint[0]), np.int(self.rectPosPoint[1]),
                 np.int(self.rectSize[0]), np.int(self.rectSize[1]))
 
-    def Move(self,dis):
+    def Move(self, dis):
         self.rectPosPoint = self.rectPosPoint + dis
-
 
     def __str__(self):
         return ' rectPosPoint:%s,rectSize:%s ' % (
@@ -301,31 +311,74 @@ class Obj(object):
 
 
 ###################################################################
+transTypes = ['py', 'xz', 'ts']
+DEFAULT_TRANS_OPTS = {
+        'py_xmin': 0,
+        'py_xmax': 100,
+        'py_ymin': 0,
+        'py_ymax': 100,
+        }
 
 
 class Trans(object):
-    def __init__(self, obj):
+    def __init__(self, obj, same=False):
         '''
         '''
         assert(isinstance(obj, Obj))
         self.obj_imA = obj
         self.obj_imB = None
+        self.obj_imB_shift = np.array([0, 0])
         self.obj_flowA = None
         self.obj_flowB = None
         self.transMatrix = np.eye(3, dtype=np.float)
 
-    def ImposeTransMatrix(self):
+    def ImposeTrans(self, pts):
+        # 临时输入pair
+        M = cv2.getPerspectiveTransform(pts[0], pts[1])
+        print(M)
+        rectA = self.obj_imA.rect
+        rectB = rectA()
+        imgA = self.obj_imA.rectData
+        maskA = self.obj_imA.rectDataMask
+        Bshift = self.Check(pts[1][0])
+        rectB.Move(Bshift)
+        self.obj_imB_shift = Bshift
+        print(rectB,rectA)
+        # 需要对矩阵大小进行修正
+        # 需要判断矩阵大小
+        
+        #dst = cv2.warpPerspective( img, M, (width, height))
         pass
         # cv2.bianhuan
 
+    def GenTrans(self, transType=None, trans_opts=DEFAULT_TRANS_OPTS):
+        # 抽象input：平移，旋转，其他（随机）
+        # 抽象out：4点对
+        # input：4点，4点
+        # output：M
+        assert transType in transTypes
+        Acorners = self.obj_imA.rect.CvAllCorners()
+        Bcorners = Acorners
+        if 'py' in transType:
+            py_xmin = trans_opts['py_xmin']
+            py_xmax = trans_opts['py_xmax']
+            py_ymin = trans_opts['py_ymin']
+            py_ymax = trans_opts['py_ymax']
+            py_x = np.random.random_integers(py_xmin, py_xmax)
+            py_y = np.random.random_integers(py_ymin, py_ymax)
+            #Bcorners = Bcorners + np.array([py_x, py_y])
+            # 需要改回远洋
+            Bcorners = Bcorners + np.array([-10, -20])
+        return (np.float32(Acorners), np.float32(Bcorners))
 
-def GenTransMatrix(self, type_=None, trans_opts=None):
-    # 抽象input：平移，旋转，其他（随机）
-    # 抽象out：4点对
-    # input：4点，4点
-    # output：M
-    return np.eyes(3, dtype=np.float)
-
+    def Check(self, Bpt):
+        ### 需要改成对4个点判断
+        Apt = self.obj_imA.rect.rectPosPoint
+        dx = Bpt[0]-Apt[0]
+        dx = [dx, 0][dx > 0] # 负的保留，正的为0
+        dy = Bpt[1]-Apt[1]
+        dy = [dy, 0][dy > 0]
+        return np.array([dx, dy])
 ###################################################################
 
 

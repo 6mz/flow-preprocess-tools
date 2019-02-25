@@ -47,3 +47,18 @@ def RandomPoint(minPoint, maxPoint):
     y = np.random.random_integers(miny, maxy)
     return Point(x, y)
 
+
+def RandomDis(minDis, maxDis):
+    '''
+    返回一个dis矩阵(1*2)
+    输入：
+        minDis: 格式：(x,y)，表示最小的x和y
+        maxDis: 格式：(x,y)，表示最大的x和y
+    '''
+    assert(len(minDis) == len(maxDis) == 2)
+    (minx, maxx) = FindMinAndMax(maxDis[0], minDis[0])
+    (miny, maxy) = FindMinAndMax(maxDis[1], minDis[1])
+    assert (maxx >= minx) and (maxy >= miny)
+    x = np.random.random_integers(minx, maxx)
+    y = np.random.random_integers(miny, maxy)
+    return np.array([x, y])
