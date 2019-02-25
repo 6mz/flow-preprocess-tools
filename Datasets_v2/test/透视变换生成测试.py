@@ -12,7 +12,7 @@ M1 = np.array([[0.5, 0, 0], [0, 0.5, 0], [0, 0, 1]], dtype=np.float)
 M2 = np.array([[cos, sin, 0], [-sin, cos, 0], [0, 0, 1]], dtype=np.float)
 M3 = np.array([[cos*0.5, sin, 0], [-sin, cos*0.5, 0], [0, 0, 1]],
               dtype=np.float)
-M4 = np.array([[0.5, 0, 10], [0, 0.5, 10], [0, 0, 1]], dtype=np.float)
+M4 = np.array([[cos, sin, 50], [-sin, cos, 100], [0, 0, 1]], dtype=np.float)
 #dst = cv2.warpPerspective(img, M4, (385, 240))
 #im = Image.fromarray(dst)
 #im.show()
@@ -20,9 +20,9 @@ M4 = np.array([[0.5, 0, 10], [0, 0.5, 10], [0, 0, 1]], dtype=np.float)
 
 height , width , channels = img.shape
 pts1 = np.float32( [ [0,0],[385,0],[0,240],[385,240] ] )
-pts2 = np.float32( [ [0,0],[385,0],[0,240],[385,240] ] )+10
+pts2 = np.float32( [ [0,0],[385,0],[0,240],[385,240] ] )-10
 M = cv2.getPerspectiveTransform(pts1 , pts2)
-dst = cv2.warpPerspective( img , M , (width , height))
+dst = cv2.warpPerspective( img , M4 , (width+100 , height+100))
 im = Image.fromarray(dst)
 im.show()
 
