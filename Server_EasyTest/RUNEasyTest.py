@@ -19,6 +19,7 @@ def ask(something='',flag=0):
         ans=input('again?[y/n]')
     print('\n')
 
+
 def NogtTest(rundir,datasets_path,ltype,ltype2,num):
     et = EasyTest(rundir)
     et.GenRandomLists_Nogt(datasets_path,ltype,ltype2,num)
@@ -81,6 +82,7 @@ def FullTest_FromTxt(rundir,num):
     et.VizFlows(bestFlow='d')
     et.PrintAllInfo()
 
+
 def NogtTest_AllFromTxt(rundir,num):
     et = EasyTest(rundir)
     et.GenListsFromTxts_Nogt(num)
@@ -90,6 +92,7 @@ def NogtTest_AllFromTxt(rundir,num):
     et.MovePics(gt=False)
     et.GenWarp('anw','awww')
     et.PrintAllInfo()
+
 
 if '__main__' == __name__:
     my_dir = os.path.dirname(os.path.realpath(__file__))

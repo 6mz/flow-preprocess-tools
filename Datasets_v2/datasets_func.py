@@ -42,7 +42,7 @@ def RandomPoint(minPoint, maxPoint):
     assert(isinstance(maxPoint, Point) or len(maxPoint) == 2)
     (minx, maxx) = FindMinAndMax(minPoint[0], maxPoint[0])
     (miny, maxy) = FindMinAndMax(minPoint[1], maxPoint[1])
-    assert((maxx >= minx >= 0)and(maxy >= miny >= 0))
+    assert((maxx >= minx)and(maxy >= miny))
     x = np.random.random_integers(minx, maxx)
     y = np.random.random_integers(miny, maxy)
     return Point(x, y)
