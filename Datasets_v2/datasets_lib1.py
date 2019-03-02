@@ -154,29 +154,33 @@ class Rect(object):
     def shape(self):
         return (self.rectSize[0], self.rectSize[1])
 
-    def Central(self):
+    def Central(self, local=False):
         # 中心点
+        if(local):
+            return Point(self.rectSize/2)
         return Point(self.rectPosPoint + self.rectSize/2)
 
-    def DiaCorner(self):
+    def DiaCorner(self, local=False):
         # 对角点
+        if(local):
+            return Point(self.rectSize)
         return Point(self.rectPosPoint + self.rectSize)
 
-    def AllCorners(self):
+    def AllCorners(self, local=False):
         # 所有角点，顺序：
         # 12
         # 43
-        corner1 = self.rectPosPoint
+        corner1 = Point(0, 0) if local else self.rectPosPoint
         corner2 = corner1 + (self.rectSize[0], 0)
-        corner3 = self.DiaCorner()
+        corner3 = self.DiaCorner(local)
         corner4 = corner1 + (0, self.rectSize[1])
         return (corner1, corner2, corner3, corner4)
 
-    def CvAllCorners(self):
+    def CvAllCorners(self, local=False):
         # 返回cv2顺序的所有角点，并打包成nparray返回
         # 12
         # 34
-        corners = self.AllCorners()
+        corners = self.AllCorners(local)
         pts = np.float32([corners[0].Array(),
                           corners[1].Array(),
                           corners[3].Array(),
@@ -290,7 +294,7 @@ class RectArray(object):
 
     def AddRectArray(self, rectArray, CSYS='local', check=True):
         # 把另一个rectArray叠加到自身上，直接覆盖，不是相加
-        # check为
+        # check为范围检查
         assert (isinstance(rectArray, RectArray))
         rect = rectArray.rect()  # 副本便于修改
         rectData = rectArray.rectData
@@ -309,7 +313,7 @@ class RectArray(object):
 
 
 def LF_AddRectArray(rect1, rectData1, rect2, rectData2,
-                    CSYS='local', check=True, mask=None):
+                    CSYS='local', check=True, mask2=None):
     # 把一个矩阵叠加到另一个矩阵上的具体实现函数，被RectArray和Obj类调用
     # 这里的叠加使用的是相对坐标，即叠加矩阵的坐标原点是被叠加矩阵的左上角点
     # 如果叠加矩阵的坐标是全局坐标，全局坐标会被变换为相对坐标参与计算
@@ -322,15 +326,16 @@ def LF_AddRectArray(rect1, rectData1, rect2, rectData2,
         rect2.Move(dis)
     if(check):
         # check 用于判断rect1是否完全包含rect2
-        LF_AddRectArray_v1(rect1, rectData1, rect2, rectData2, mask)
+        LF_AddRectArray_v1(rect1, rectData1, rect2, rectData2, mask2)
     else:
-        LF_AddRectArray_v2(rect1, rectData1, rect2, rectData2, mask)
+        LF_AddRectArray_v2(rect1, rectData1, rect2, rectData2, mask2)
 
 
-def LF_AddRectArray_v1(rect1, rectData1, rect2, rectData2, mask=None):
+def LF_AddRectArray_v1(rect1, rectData1, rect2, rectData2, mask2=None):
     # 严格叠加，rect1完全包含rect2才会执行
     # 这里的叠加使用的是相对坐标，即叠加矩阵的坐标原点是被叠加矩阵的左上角点
     # 因此直接与(0,0)和(shape())判断是否有包含
+    # 注意xy和ij坐标系！！！！！！！！！！！！！！！！！！！！
     assert (rect2 <= rect1)
     if ((rect2.rectPosPoint < Point([0, 0])) or
             (rect2.DiaCorner() > Point(rect1.shape()))):
@@ -340,15 +345,15 @@ def LF_AddRectArray_v1(rect1, rectData1, rect2, rectData2, mask=None):
     y1 = np.int(rect2.rectPosPoint.y + 0.5)
     x2 = np.int(rect2.DiaCorner().x + 0.5)
     y2 = np.int(rect2.DiaCorner().y + 0.5)
-    if mask is not None:
-        assert (mask.shape[0:2] == rectData2.shape[0:2])
-        rectData1[x1:x2, y1:y2][mask] = rectData2[mask]
+    if mask2 is not None:
+        assert (mask2.shape[0:2] == rectData2.shape[0:2])
+        rectData1[y1:y2, x1:x2][mask2] = rectData2[mask2]
     else:
-        rectData1[x1:x2, y1:y2] = rectData2
+        rectData1[y1:y2, x1:x2] = rectData2
     return rectData1
 
 
-def LF_AddRectArray_v2(rect1, rectData1, rect2, rectData2, mask=None):
+def LF_AddRectArray_v2(rect1, rectData1, rect2, rectData2, mask2=None):
     # 普通的叠加，如果rect2超出rect1的范围就只保留重叠的部分
     rect2_cut = rect1 & rect2  # 计算重合部分
     if rect2_cut is None:
@@ -358,13 +363,13 @@ def LF_AddRectArray_v2(rect1, rectData1, rect2, rectData2, mask=None):
     y1 = np.int(rect2_cut.rectPosPoint.y - rect2.rectPosPoint.y + 0.5)
     x2 = np.int(rect2_cut.DiaCorner().x - rect2.rectPosPoint.x + 0.5)
     y2 = np.int(rect2_cut.DiaCorner().y - rect2.rectPosPoint.y + 0.5)
-    rectData2_cut = rectData2[x1:x2, y1:y2]
-    if mask is not None:
-        mask_cut = mask[x1:x2, y1:y2]
+    rectData2_cut = rectData2[y1:y2, x1:x2]
+    if mask2 is not None:
+        mask2_cut = mask2[y1:y2, x1:x2]
     else:
-        mask_cut = None
+        mask2_cut = None
     return LF_AddRectArray_v1(  # 把重合部分输入
-            rect1, rectData1, rect2_cut, rectData2_cut, mask_cut)
+            rect1, rectData1, rect2_cut, rectData2_cut, mask2_cut)
 
 ###################################################################
 
@@ -407,7 +412,10 @@ class Obj(object):
         assert CSYS in ['local', 'global']
         assert (isinstance(obj, Obj))
         LF_AddRectArray(self.rect, self.rectData, obj.rect, obj.rectData,
-                        CSYS=CSYS, check=check, mask=obj.Mask())
+                        CSYS=CSYS, check=check, mask2=obj.Mask())
+        LF_AddRectArray(self.rect, self.rectDataMask,
+                        obj.rect, obj.rectDataMask,
+                        CSYS=CSYS, check=check)
 
     def Mask(self):
         # 把1个通道的mask复制成N个通道的mask
@@ -425,21 +433,34 @@ class Obj(object):
 ###################################################################
 TRANS_TYPE = ['py', 'xz', 'ts']
 DEFAULT_TRANS_OPTS = {
+        # -------  py ---------
+        'py':'random',  # ['random', {1x2向量}]
         'py_xmin': -100,
         'py_xmax': 100,
         'py_ymin': -100,
         'py_ymax': 100,
+        # -------- xz ---------
+        # 旋转角
+        'xz_theta':'random',  # ['random', {number}]
+        # xz_theta是'random'则xz_theta_min和xz_theta_max用于随机产生旋转角
         'xz_theta_min': 0,
         'xz_theta_max': np.pi,
-        'xz_central': 'self_central'
+        'xz_central': 'self_central',  # ['self_central','local','global']
+        # 如果xz_central是'local'则xz_central_local生效，使用的是局部坐标系，
+        # 可以填入Point类型表示局部坐标，或是直接填入元组表示相对位置（一般使用0-1的小数）
+        'xz_central_local': (0.5, 0.5),  # 或使用如 Point(20, 30) 形式
+        # 如果xz_central是'global'则xz_central_global生效，使用的是全局坐标系，
+        # 必需填入Point类型表示全局坐标
+        'xz_central_global': Point(0, 0)
         }
 
 
 class Trans(object):
-    def __init__(self, obj, same=False):
+    def __init__(self, obj, id_=None, same=False):
         '''
         '''
         assert(isinstance(obj, Obj))
+        self.id = id_
         self.obj_imA = obj
         self.obj_imB = None
         self.obj_flowA = None
@@ -449,17 +470,32 @@ class Trans(object):
 
     def ImposeTrans(self, pts):
         # 注意，这里的M和传统的M是转置关系，即位移变量在矩阵右侧而不是底侧
-        M = cv2.getPerspectiveTransform(pts[0], pts[1])
+        Acorners = pts[0]
+        Bcorners = pts[1]
+        M = cv2.getPerspectiveTransform(Acorners, Bcorners)
         rectA = self.BorderRect(pts[0])
+        rectA.Move(self.obj_imA.rect.rectPosPoint)  # 局部坐标修正回全局坐标
         rectB = self.BorderRect(pts[1])
+        rectB.Move(self.obj_imA.rect.rectPosPoint)
+        # 坐标对齐
         shift = rectB.rectPosPoint - rectA.rectPosPoint
-        self.Bshift = shift
-        M_shift = cv2.getPerspectiveTransform(pts[1], pts[1] - shift)
+        M_shift = cv2.getPerspectiveTransform(
+                np.float32(Bcorners) ,np.float32(Bcorners - shift))
         assert rectA == self.obj_imA.rect
+        self.transMatrix = M
+        self.Bshift = shift
         self.TransData(M, M_shift, rectA, rectB)
         self.GenFlow(M, rectA, rectB)
 
+# ==========================================
     def TransData(self, M, M_shift, rectA, rectB):
+        '''
+        变换原图数据
+        图片数据应和局部坐标系下的（0,0）点对齐，然后用Rect类来表征位置和大小
+        warpPerspective函数变换前后使用同一个局部系，因此变换后的数据左上角不和RectB对齐，
+        而和RectA对齐，为此需要引入M_shift来位移图像和RectB进行对齐，
+        同时也可以防止图像溢出范围，造成显示不完全（如不位移出现负坐标的部分会被截去）
+        '''
         imgA = self.obj_imA.rectData
         maskA = self.obj_imA.rectDataMask
         imgB = cv2.warpPerspective(
@@ -476,7 +512,7 @@ class Trans(object):
         return self.obj_imB
 
     def GenFlow(self, M, rectA, rectB):
-        # 生成光流
+        # 生成变换对应的光流
         Awidth = rectA.rectSize[0]  # 宽度，列数
         Aheight = rectA.rectSize[1]
         maskA = self.obj_imA.rectDataMask
@@ -496,11 +532,13 @@ class Trans(object):
         maskArrayA.SetRectData(maskA)
         self.obj_flowA = Obj(FlowArrayA, maskArrayA)
         return self.obj_flowA
+# ========================================
 
     def GenTrans(self, transType=None, trans_opts=DEFAULT_TRANS_OPTS):
-        # ss
+        # 生成变换点对
+        # 使用局部坐标系，原点为图A的左上角
         assert transType in TRANS_TYPE
-        Acorners = self.obj_imA.rect.CvAllCorners()
+        Acorners = self.obj_imA.rect.CvAllCorners(local=True)
         Bcorners = Acorners
         if 'py' == transType:
             Bcorners = self.GenTrans_py(Acorners, trans_opts)
@@ -509,6 +547,7 @@ class Trans(object):
         return (np.float32(Acorners), np.float32(Bcorners))
 
     def GenTrans_py(self, Acorners, trans_opts):
+        # 平移变换
         py_xmin = trans_opts['py_xmin']
         py_xmax = trans_opts['py_xmax']
         py_ymin = trans_opts['py_ymin']
@@ -519,21 +558,24 @@ class Trans(object):
         return Bcorners
 
     def GenTrans_xz(self, Acorners, trans_opts):
-        xz_theta_min = trans_opts['xz_theta_min']
-        xz_theta_max = trans_opts['xz_theta_max']
-        xz_central = trans_opts['xz_central']
-        if xz_central == 'self_central':
-            xz_point = self.BorderRect(Acorners).Central()
+        # 旋转变换，cv的旋转中心是RectA的左上角，故变换矩阵基于局部坐标系产生
+        # 确定旋转中心
+        xz_point = self.GenTrans_xz_GetCentral(Acorners, trans_opts)
+        if trans_opts['xz_theta'] == 'random':
+            # 确定随机逆时针旋转的角度
+            xz_theta_min = trans_opts['xz_theta_min']
+            xz_theta_max = trans_opts['xz_theta_max']
+            xz_theta = xz_theta_min + \
+                np.random.random() * (xz_theta_max - xz_theta_min)
         else:
-            xz_point = Point(0, 0)
-        # 逆时针旋转的角度
-        xz_theta = xz_theta_min + \
-            np.random.random() * (xz_theta_max - xz_theta_min)
-        xz_theta = 90 / 180 * np.pi  # !!!!!!!!!!!!!!!!!
+            xz_theta = trans_opts['xz_theta']
+            assert isinstance(xz_theta,(float,int))
+        # print(xz_theta)
         cos = np.cos(-xz_theta)
         sin = np.sin(-xz_theta)
-        cx = xz_point.x
-        cy = xz_point.y
+        cx = xz_point.x - 0
+        cy = xz_point.y - 0
+        # 旋转矩阵
         M = np.array([
                     [cos, -sin, (1-cos)*cx+sin*cy],
                     [sin, cos, (1-cos)*cy-sin*cx],
@@ -546,8 +588,39 @@ class Trans(object):
         resx = (homoc[0, :]/homoc[2, :])
         resy = (homoc[1, :]/homoc[2, :])
         Bcorners = np.array([resx, resy]).transpose()
-        print(Acorners,Bcorners)
+        # print(xz_point,'\n',Acorners,'\n',Bcorners) # !!!!!!!!!!!!
         return Bcorners
+
+    def GenTrans_xz_GetCentral(self, Acorners, trans_opts):
+        # 确定旋转中心
+        xz_central = trans_opts['xz_central']
+        if xz_central == 'self_central':
+            xz_point = self.BorderRect(Acorners).Central(local=True)
+        elif xz_central == 'local':
+            xz_c_local = trans_opts['xz_central_local']
+            if isinstance(xz_c_local, Point):
+                xz_point = xz_c_local
+            else:
+                assert(len(xz_c_local)) == 2
+                rect_shape = self.BorderRect(Acorners).shape()
+                xz_c_local_x = xz_c_local[0] * rect_shape[0]
+                xz_c_local_y = xz_c_local[1] * rect_shape[1]
+                xz_point = Point(xz_c_local_x, xz_c_local_y)
+                if not Point(0, 0) <= xz_point <= Point(rect_shape):
+                    print(f'WARRING: xz_central:' +
+                          ' xz_central {xz_point} is strange')
+        elif xz_central == 'global':
+            xz_c_global = trans_opts['xz_central_global']
+            if isinstance(xz_c_global, Point):
+                rectPosPoint = self.BorderRect(Acorners).rectPosPoint
+                xz_point = Point(xz_c_global - rectPosPoint)
+            else:
+                xz_point = Point(0, 0)
+                print(f'WARRING: xz_central: xz_central_global is not Point')
+        else:
+            xz_point = Point(0, 0)
+        print(xz_point)
+        return xz_point
 
     def BorderRect(self, pts):
         # 找到4个点的外框矩阵
@@ -597,17 +670,17 @@ class Board(object):
         if 'imA' in lists:
             imArray = np.uint8(self.imA.rectData)
             im = Image.fromarray(imArray)
-            im.save('../data/ds_v1/tmp1.jpg')
+            im.save('../data/ds_v1/1A.jpg')
         elif 'imB' in lists:
             imArray = np.uint8(self.imB.rectData)
             im = Image.fromarray(imArray)
-            im.save('../data/ds_v1/tmp2.jpg')
+            im.save('../data/ds_v1/1B.jpg')
         elif 'flowA' in lists:
             flow_g = np.linalg.norm((self.flowA.rectData), axis=2)
             imArray = np.uint8(flow_g/(np.max(flow_g)+1)*255)
             im = Image.fromarray(imArray)
-            im.save('../data/ds_v1/tmp_flow.jpg')
-            flow_write('../data/ds_v1/tmp_flow.flo',self.flowA.rectData)
+            im.save('../data/ds_v1/1gt.jpg')
+            flow_write('../data/ds_v1/1gt.flo', self.flowA.rectData)
             return imArray
         elif 'flowB' in lists:
             imArray = np.uint8(self.flowB.rectData)

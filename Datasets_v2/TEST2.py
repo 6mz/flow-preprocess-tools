@@ -1,17 +1,12 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Feb 25 21:10:58 2019
-
-@author: Administrator
-"""
-
 import mynumpy as m
 import numpy as np
 from PIL import Image
-from datasets_lib1 import Point, Rect, RectArray, Obj, Trans, Board
-import datasets_func as func
-
 import cv2
+from copy import deepcopy
+from datasets_lib1 import \
+Point, Rect, RectArray, Obj, Trans, Board, DEFAULT_TRANS_OPTS
+import datasets_func as func
 
 def DisplayObject(obj):
     imArray = obj.data * obj.dataMask + obj.data * 0.2
@@ -20,10 +15,11 @@ def DisplayObject(obj):
     im = Image.fromarray(imArray)
     im.show()
 
+img = Image.open('../data/ds_v1/timg.jpg')
+img = img.resize((256, 256))
+im = np.array(img)
 
-im = np.array(Image.open('../data/ds_v1/timg.jpg'))
-
-pos = func.RandomPoint([-100, -100], [300, 300])
+pos = func.RandomPoint([100, 100], [100, 100])
 # size = func.RandomSize([10, 10], [50, 50])
 size = im.shape[0:2]
 
@@ -47,10 +43,15 @@ obj1_datamask.SetValue(immask)
 obj1 = Obj(obj1_data, obj1_datamask)
 trans = Trans(obj1)
 #pts = trans.GenTrans('py')
-pts = trans.GenTrans('xz')
+trans_opts = deepcopy(DEFAULT_TRANS_OPTS)
+trans_opts['xz_theta'] = 270 / 180 * np.pi  
+trans_opts['xz_central'] = 'local'
+trans_opts['xz_central_local'] = (0.4, 0.4)
+
+pts = trans.GenTrans('xz',trans_opts)
 trans.ImposeTrans(pts)
 #DisplayObject(obj1)
-mainboard = Board([1000, 1000])
+mainboard = Board([640, 480])
 mainboard.addTrans(trans)
 mainboard.Gen()
 mainboard.Display('imA')

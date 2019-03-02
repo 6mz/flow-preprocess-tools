@@ -28,16 +28,12 @@ def NogtTest(rundir,datasets_path,ltype,ltype2,num):
     et.SaveLists_stage1()
     args=['python' , './proc_images.py' ] + et.get_commendTxTNames()
     commend = [str.join(' ', args)]
-    #save_list(os.path.join(et.runDir,'commend.txt'),[commend])
-    #save_list('commend.txt',[commend])
     print('OUTPUT TXTS: commend.txt IN Current Folder AND ' + et.runDir)
     et.MovePics(gt=False)
-    #subprocess.call(['python','commend.py'])
     subprocess.call(commend)
-#    print("由于python3不能调用python2,请在程序挂起期间后到python2环境下执行 commend.py 或 commend.txt 运行PWC-Net\n ")
-#    ask('是否完成？',flag=1)
     et.VizFlows(outFlow='g',resFlow='g')
     et.GenWarp('w','wo','wom','nw','nwo')
+    et.PrintAllInfo()
 
 
 def FullTest(rundir,datasets_path,ltype,ltype2,num):
@@ -52,13 +48,12 @@ def FullTest(rundir,datasets_path,ltype,ltype2,num):
     save_list('commend.txt',[commend])
     print('OUTPUT TXTS: commend.txt IN Current Folder AND ' + et.runDir)
     et.MovePics()
-    et.VizFlows(outFlow='g',resFlow='g',gtFlow='d')
     subprocess.call(['python','commend.py'])
-#    print("由于python3不能调用python2,请在程序挂起期间到python2环境下执行 commend.py 或 commend.txt 运行PWC-Net\n ")
-#    ask('是否完成？',flag=1)
+    et.VizFlows(outFlow='g',resFlow='g',gtFlow='d')
     et.GenSparLists(num)
     et.GenerateSparplots()
     et.VizFlows(bestFlow='d')
+    et.GenWarp('w','nw','nwm')
     et.PrintAllInfo()
 
 def FullTest_FromTxt(rundir,num):
@@ -97,13 +92,13 @@ def NogtTest_AllFromTxt(rundir,num):
 if '__main__' == __name__:
     my_dir = os.path.dirname(os.path.realpath(__file__))
     os.chdir(my_dir) 
-    rundir = './data/test1'
-    datasets_path='/4T_/flow/testSet/img_group/'
-    ltype = 'Real'
-    ltype2 = None
-    num = 118
+    rundir = './data/test_datasets_v2'
+    datasets_path='/4T_/flow/liumz_test/'
+    ltype = 'Simple2d'
+    ltype2 = 't1'
+    num = 1
 
-    #NogtTest(rundir,datasets_path,ltype,ltype2,num)
-    NogtTest(rundir,datasets_path,ltype,ltype2,num)#gt
+    FullTest(rundir,datasets_path,ltype,ltype2,num)
+    #NogtTest(rundir,datasets_path,ltype,ltype2,num)#gt
     #FullTest2(rundir,num)#gt
     #NogtTest_AllFromTxt(rundir,num)
