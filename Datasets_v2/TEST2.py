@@ -8,6 +8,7 @@ from datasets_lib1 import \
 Point, Rect, RectArray, Obj, Trans, Board, DEFAULT_TRANS_OPTS
 import datasets_func as func
 
+
 def DisplayObject(obj):
     imArray = obj.data * obj.dataMask + obj.data * 0.2
     imArray = imArray / np.max(imArray) * 255
@@ -19,8 +20,9 @@ img = Image.open('../data/ds_v1/timg.jpg')
 img = img.resize((256, 256))
 im = np.array(img)
 
-pos = func.RandomPoint([100, 100], [100, 100])
+#pos = func.RandomPoint([0, 0], [200, 200])
 # size = func.RandomSize([10, 10], [50, 50])
+pos = Point(100,100)
 size = im.shape[0:2]
 
 obj1_rect = Rect(pos, size)
@@ -44,19 +46,21 @@ obj1 = Obj(obj1_data, obj1_datamask)
 trans = Trans(obj1)
 #pts = trans.GenTrans('py')
 trans_opts = deepcopy(DEFAULT_TRANS_OPTS)
-trans_opts['xz_theta'] = 270 / 180 * np.pi  
-trans_opts['xz_central'] = 'local'
-trans_opts['xz_central_local'] = (0.4, 0.4)
+trans_opts['xz_theta'] = 45 / 180 * np.pi
+trans_opts['py'] = (20, 20)
 
-pts = trans.GenTrans('xz',trans_opts)
-trans.ImposeTrans(pts)
+trans.GenTrans('py',trans_opts)
+trans.GenTrans('xz',trans_opts)
+trans.ImposeTrans()
 #DisplayObject(obj1)
 mainboard = Board([640, 480])
 mainboard.addTrans(trans)
 mainboard.Gen()
-mainboard.Display('imA')
-mainboard.Display('imB')
-look = mainboard.Display('flowA')
+mainboard.Save({'imA': '../data/ds_v1/1A.jpg'})
+mainboard.Save({'imB': '../data/ds_v1/1B.jpg'})
+mainboard.Save({'flowA_viz' :'../data/ds_v1/1gt.jpg'})
+look = mainboard.Save({'flowA': '../data/ds_v1/1gt.flo'})
+
+
 #print(obj1)
 #look = obj1.data_
-#look2 = obj1.dataMask_
