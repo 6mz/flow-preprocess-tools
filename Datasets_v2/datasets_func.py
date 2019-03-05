@@ -62,3 +62,15 @@ def RandomDis(minDis, maxDis):
     x = np.random.random_integers(minx, maxx)
     y = np.random.random_integers(miny, maxy)
     return np.array([x, y])
+
+
+def RandomAngle(minAngle, maxAngle=None, unit='rad'):
+    if maxAngle is None and minAngle > 0:
+        maxAngle = minAngle
+        minAngle = 0
+    if unit == 'd' or unit == 'degree':
+        maxAngle = maxAngle / 180 * np.pi
+        minAngle = minAngle / 180 * np.pi
+    angle = minAngle + \
+        np.random.random() * (maxAngle - minAngle)
+    return angle

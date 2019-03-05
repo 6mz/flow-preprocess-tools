@@ -3,9 +3,8 @@ import mynumpy as m
 import numpy as np
 from PIL import Image
 import cv2
-from copy import deepcopy
 from datasets_lib1 import \
-Point, Rect, RectArray, Obj, Trans, Board, DEFAULT_TRANS_OPTS
+Point, Rect, RectArray, Obj, Trans, Board, GetTransOpts
 import datasets_func as func
 
 
@@ -20,9 +19,9 @@ img = Image.open('../data/ds_v1/timg.jpg')
 img = img.resize((256, 256))
 im = np.array(img)
 
-#pos = func.RandomPoint([0, 0], [200, 200])
+pos = func.RandomPoint([0, 0], [200, 200])
 # size = func.RandomSize([10, 10], [50, 50])
-pos = Point(100,100)
+#pos = Point(100,100)
 size = im.shape[0:2]
 
 obj1_rect = Rect(pos, size)
@@ -45,9 +44,9 @@ obj1_datamask.SetValue(immask)
 obj1 = Obj(obj1_data, obj1_datamask)
 trans = Trans(obj1)
 #pts = trans.GenTrans('py')
-trans_opts = deepcopy(DEFAULT_TRANS_OPTS)
-trans_opts['xz_theta'] = 45 / 180 * np.pi
-trans_opts['py'] = (20, 20)
+trans_opts = GetTransOpts()
+trans_opts['xz_theta'] = func.RandomAngle(np.pi/2)
+trans_opts['py'] = func.RandomDis((-100,-100), (100, 100))
 
 trans.GenTrans('py',trans_opts)
 trans.GenTrans('xz',trans_opts)
@@ -56,10 +55,10 @@ trans.ImposeTrans()
 mainboard = Board([640, 480])
 mainboard.addTrans(trans)
 mainboard.Gen()
-mainboard.Save({'imA': '../data/ds_v1/1A.jpg'})
-mainboard.Save({'imB': '../data/ds_v1/1B.jpg'})
-mainboard.Save({'flowA_viz' :'../data/ds_v1/1gt.jpg'})
-look = mainboard.Save({'flowA': '../data/ds_v1/1gt.flo'})
+mainboard.Save({'imA': '../data/ds_v2/TEST2/1A.jpg'})
+mainboard.Save({'imB': '../data/ds_v2/TEST2/1B.jpg'})
+mainboard.Save({'flowA_viz' :'../data/ds_v2/TEST2/1gt.jpg'})
+look = mainboard.Save({'flowA': '../data/ds_v2/TEST2/1gt.flo'})
 
 
 #print(obj1)

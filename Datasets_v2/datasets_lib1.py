@@ -435,17 +435,10 @@ class Obj(object):
 TRANS_TYPE = ['py', 'xz', 'ts']
 DEFAULT_TRANS_OPTS = {
         # -------  py ---------
-        'py': 'random',  # ['random', {1x2向量}]
-        'py_xmin': -100,
-        'py_xmax': 100,
-        'py_ymin': -100,
-        'py_ymax': 100,
+        'py': [0, 0],  # {1x2向量}平移量
         # -------- xz ---------
-        # 旋转角
-        'xz_theta': 'random',  # ['random', {number}]
-        # xz_theta是'random'则xz_theta_min和xz_theta_max用于随机产生旋转角
-        'xz_theta_min': 0,
-        'xz_theta_max': np.pi,
+        'xz': 0,  # 旋转角
+        # 旋转中心
         'xz_central': 'self_central',  # ['self_central','local','global']
         # 如果xz_central是'local'则xz_central_local生效，使用的是局部坐标系，
         # 可以填入Point类型表示局部坐标，或是直接填入元组表示相对位置（一般使用0-1的小数）
@@ -454,6 +447,10 @@ DEFAULT_TRANS_OPTS = {
         # 必需填入Point类型表示全局坐标
         'xz_central_global': Point(0, 0)
         }
+
+
+def GetTransOpts():
+    return deepcopy(DEFAULT_TRANS_OPTS)
 
 
 class Trans(object):
@@ -473,8 +470,16 @@ class Trans(object):
         self.Bshift = np.array([0, 0])
         self.transMatrix = np.eye(3, dtype=np.float)
 
+    def QuickTrans(self, transTypes=None, trans_opts=DEFAULT_TRANS_OPTS):
+        # 组合了GenTrans和ImposeTrans达到一键生成的目的
+        # transTypes 是一个列表
+        for transType in transTypes:
+            self.GenTrans(transType, trans_opts)
+        self.ImposeTrans()
+
     def ImposeTrans(self, pts=None):
         # 注意，这里的M和传统的M是转置关系，即位移变量在矩阵右侧而不是底侧
+        # pts是一个列表，内含2组四元点对，如果不是None就使用pts产生变换矩阵M
         if pts is None:
             Acorners = self.Acorners
             Bcorners = self.Bcorners
@@ -560,18 +565,9 @@ class Trans(object):
         return (np.float32(Acorners), np.float32(Bcorners))
 
     def GenTrans_py(self, Acorners, trans_opts):
-        # 平移变换
-        if(trans_opts['py'] == 'random'):
-            py_xmin = trans_opts['py_xmin']
-            py_xmax = trans_opts['py_xmax']
-            py_ymin = trans_opts['py_ymin']
-            py_ymax = trans_opts['py_ymax']
-            py_x = np.random.random_integers(py_xmin, py_xmax)
-            py_y = np.random.random_integers(py_ymin, py_ymax)
-        else:
-            assert len(trans_opts['py']) == 2
-            py_x = trans_opts['py'][0]
-            py_y = trans_opts['py'][1]
+        assert len(trans_opts['py']) == 2
+        py_x = trans_opts['py'][0]
+        py_y = trans_opts['py'][1]
         Bcorners = Acorners + np.array([py_x, py_y])
         return Bcorners
 
@@ -579,15 +575,8 @@ class Trans(object):
         # 旋转变换，cv的旋转中心是RectA的左上角，故变换矩阵基于局部坐标系产生
         # 确定旋转中心
         xz_point = self.GenTrans_xz_GetCentral(Acorners, trans_opts)
-        if trans_opts['xz_theta'] == 'random':
-            # 确定随机逆时针旋转的角度
-            xz_theta_min = trans_opts['xz_theta_min']
-            xz_theta_max = trans_opts['xz_theta_max']
-            xz_theta = xz_theta_min + \
-                np.random.random() * (xz_theta_max - xz_theta_min)
-        else:
-            xz_theta = trans_opts['xz_theta']
-            assert isinstance(xz_theta,(float,int))
+        xz_theta = trans_opts['xz_theta']
+        assert isinstance(xz_theta, (float, int))
         # print(xz_theta)
         cos = np.cos(-xz_theta)
         sin = np.sin(-xz_theta)
@@ -695,22 +684,22 @@ class Board(object):
             imArray = np.uint8(self.imA.rectData)
             im = Image.fromarray(imArray)
             im.save(dicts['imA'])
-        elif 'imB' in dicts:
+        if 'imB' in dicts:
             imArray = np.uint8(self.imB.rectData)
             im = Image.fromarray(imArray)
             im.save(dicts['imB'])
-        elif 'flowA_viz' in dicts:
-            flow_g = np.linalg.norm((self.flowA.rectData), axis=2)
-            imArray = np.uint8(flow_g/(np.max(flow_g)+1)*255)
-            im = Image.fromarray(imArray)
-            im.save(dicts['flowA_viz'])
-            return imArray
-        elif 'flowA' in dicts:
-            flow_write(dicts['flowA'], self.flowA.rectData)
-        elif 'flowB' in dicts:
+        if 'flowAB' in dicts:
+            flow_write(dicts['flowAB'], self.flowA.rectData)
+        if 'flowBA' in dicts:
             imArray = np.uint8(self.flowB.rectData)
             im = Image.fromarray(imArray)
             im.show()
+        if 'flowAB_viz' in dicts:
+            flow_g = np.linalg.norm((self.flowA.rectData), axis=2)
+            imArray = np.uint8(flow_g/(np.max(flow_g)+1)*255)
+            im = Image.fromarray(imArray)
+            im.save(dicts['flowAB_viz'])
+            return imArray
 
 ###################################################################
 

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import copy
 
 
 DEFAULT_NAME_MANAGER2_OPTIONS = {
@@ -9,6 +10,10 @@ DEFAULT_NAME_MANAGER2_OPTIONS = {
         'suffix': ['A', 'B', 'gtAB'],
         'ext': ['jpg', 'jpg', 'flo']
         }
+
+
+def GetNameOpts():
+    return copy.deepcopy(DEFAULT_NAME_MANAGER2_OPTIONS)
 
 
 class NameManager2(object):
@@ -40,7 +45,7 @@ class NameManager2(object):
         for dir_ in self.fdir:
             pass
             if not os.path.exists(dir_):
-                os.mkdir(dir_)
+                os.makedirs(dir_)
                 print(f'INFO: Create {dir_}')
         if name_opts['prefix'] is None:
             self.head = ['' for i in range(gn)]
