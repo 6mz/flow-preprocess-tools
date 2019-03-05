@@ -10,7 +10,7 @@ import datasets_func as func
 from NameManager2 import NameManager2, GetNameOpts
 
 
-img = Image.open('../data/ds_v1/timg.jpg')
+img = Image.open('../data/ds_v2/timg.jpg')
 img = img.resize((256, 256))
 im = np.array(img)
 immask = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)<240

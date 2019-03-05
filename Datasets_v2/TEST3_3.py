@@ -17,10 +17,10 @@ import datasets_func as func
 from NameManager2 import NameManager2, GetNameOpts
 
 
-img = Image.open('../data/ds_v1/timg.jpg')
+img = Image.open('../data/ds_v2/timg.jpg')
 img = img.resize((256, 256))
 im = np.array(img)
-immask = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)<240
+immask = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY) < 240
 
 # 初始化 NameManager2
 num = 10
@@ -46,7 +46,7 @@ for i, name in enumerate(nm):
     # 初始化trans
     trans = Trans(obj1)
     trans_opts = GetTransOpts()
-    trans_opts['xz_theta'] = func.RandomAngle(np.pi/2)
+    trans_opts['xz_theta'] = func.RandomAngle(-np.pi/2, np.pi/2)
     trans_opts['py'] = func.RandomDis((-100, -100), (100, 100))
     trans.QuickTrans(['py', 'xz'], trans_opts)
     # 另一种写法：
@@ -55,8 +55,8 @@ for i, name in enumerate(nm):
     # trans.ImposeTrans()
     trans2 = Trans(trans.obj_imB)
     trans_opts = GetTransOpts()
-    trans_opts['xz_theta'] = func.RandomAngle(-np.pi/8, np.pi/8)
-    trans_opts['py'] = func.RandomDis((-20, -20), (20, 20))
+    trans_opts['xz_theta'] = func.RandomAngle(-np.pi/36, np.pi/36)
+    trans_opts['py'] = func.RandomDis((-40, -40), (40, 40))
     trans2.QuickTrans(['py', 'xz'], trans_opts)
 
     trans3 = Trans(trans2.obj_imB)

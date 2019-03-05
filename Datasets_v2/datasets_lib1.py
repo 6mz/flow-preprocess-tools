@@ -24,7 +24,7 @@ Obj:
 Trans：定义一组从ObjA到ObjB的变换，并生成相应的光流
 Board:
     画布，所有Obj对象最终都会在画布上叠加呈现，画布的左上角是整个图像坐标系的原点。
-    画布包含2幅变换前后的图A，B和对应的光流FlowA
+    画布包含变换前后的图A，B和对应的光流FlowA
 '''
 ###################################################################
 
@@ -384,6 +384,10 @@ class Obj(object):
         输入：
             data: RectArray形式的图像数据
             dataMask: RectArray形式的图像模板数据
+        数据说明：
+            rect： 边框
+            rectData： 图像数据
+            rectDataMask： 模板数据
         '''
         assert isinstance(data, RectArray) and isinstance(dataMask, RectArray)
         assert dataMask.dtype == np.bool
@@ -397,7 +401,7 @@ class Obj(object):
         self.rect = data_temp.rect
         self.rectData = data_temp.rectData
         self.rectDataMask = dataMask_temp.rectData
-        self.rectBorder = None
+#        self.rectBorder = None
 #        self.FindRectBorder()
 
 #    def FindRectBorder(self):
@@ -432,8 +436,10 @@ class Obj(object):
 
 
 ###################################################################
-TRANS_TYPE = ['py', 'xz', 'ts']
+TRANS_TYPE = ['M', 'py', 'xz', 'sf', 'ts']
 DEFAULT_TRANS_OPTS = {
+        # -------- M ---------
+        'M': np.eye(3, 3),
         # -------  py ---------
         'py': [0, 0],  # {1x2向量}平移量
         # -------- xz ---------
@@ -445,7 +451,9 @@ DEFAULT_TRANS_OPTS = {
         'xz_central_local': (0.5, 0.5),  # 或使用如 Point(20, 30) 形式
         # 如果xz_central是'global'则xz_central_global生效，使用的是全局坐标系，
         # 必需填入Point类型表示全局坐标
-        'xz_central_global': Point(0, 0)
+        'xz_central_global': Point(0, 0),
+        # -------- sf ---------
+        'sf': (1, 1),
         }
 
 
@@ -507,11 +515,11 @@ class Trans(object):
 # ==========================================
     def TransData(self, M, M_shift, rectA, rectB):
         '''
-        变换原图数据
-        图片数据应和局部坐标系下的（0,0）点对齐，然后用Rect类来表征位置和大小
-        warpPerspective函数变换前后使用同一个局部系，因此变换后的数据左上角不和RectB对齐，
-        而和RectA对齐，为此需要引入M_shift来位移图像和RectB进行对齐，
-        同时也可以防止图像溢出范围，造成显示不完全（如不位移出现负坐标的部分会被截去）
+        变换原图数据：
+            图片数据应和局部坐标系下的（0,0）点对齐，然后用Rect类来表征位置和大小；
+            warpPerspective函数变换前后使用同一个局部系，因此变换后的数据左上角不和RectB
+            对齐，而和RectA对齐，为此需要引入M_shift来位移图像和RectB进行对齐，
+            同时也可以防止图像溢出范围，造成显示不完全（如不位移出现负坐标的部分会被截去）
         '''
         imgA = self.obj_imA.rectData
         maskA = self.obj_imA.rectDataMask
@@ -557,14 +565,26 @@ class Trans(object):
         assert transType in TRANS_TYPE
         Acorners = self.Acorners
         Bcorners = self.Bcorners
-        if 'py' == transType:
+        if 'M' == transType:
+            Bcorners = self.GenTrans_M(Bcorners, trans_opts)
+        elif 'py' == transType:
             Bcorners = self.GenTrans_py(Bcorners, trans_opts)
-        if 'xz' == transType:
+        elif 'xz' == transType:
             Bcorners = self.GenTrans_xz(Bcorners, trans_opts)
+        elif 'sf' == transType:
+            Bcorners = self.GenTrans_sf(Bcorners, trans_opts)
         self.Bcorners = np.float32(Bcorners)
         return (np.float32(Acorners), np.float32(Bcorners))
 
+    def GenTrans_M(self, Acorners, trans_opts):
+        # 直接给出变换矩阵产生变换点对
+        M = trans_opts['M']
+        assert M.shape == (3, 3)
+        Bcorners = self.PointsTrans(Acorners, M)
+        return Bcorners
+
     def GenTrans_py(self, Acorners, trans_opts):
+        # 生成平移变换
         assert len(trans_opts['py']) == 2
         py_x = trans_opts['py'][0]
         py_y = trans_opts['py'][1]
@@ -572,7 +592,7 @@ class Trans(object):
         return Bcorners
 
     def GenTrans_xz(self, Acorners, trans_opts):
-        # 旋转变换，cv的旋转中心是RectA的左上角，故变换矩阵基于局部坐标系产生
+        # 生成旋转变换，cv的旋转中心是RectA的左上角，故变换矩阵基于局部坐标系产生
         # 确定旋转中心
         xz_point = self.GenTrans_xz_GetCentral(Acorners, trans_opts)
         xz_theta = trans_opts['xz_theta']
@@ -587,15 +607,19 @@ class Trans(object):
                     [cos, -sin, (1-cos)*cx+sin*cy],
                     [sin, cos, (1-cos)*cy-sin*cx],
                     [0, 0, 1]])
-        xs = Acorners[:, 0]
-        ys = Acorners[:, 1]
-        zs = np.ones_like(xs)
-        homoc = np.array([xs, ys, zs])
-        homoc = np.matmul(M, homoc)
-        resx = (homoc[0, :]/homoc[2, :])
-        resy = (homoc[1, :]/homoc[2, :])
-        Bcorners = np.array([resx, resy]).transpose()
+        Bcorners = self.PointsTrans(Acorners, M)
         # print(xz_point,'\n',Acorners,'\n',Bcorners) # !!!!!!!!!!!!
+        return Bcorners
+
+    def GenTrans_sf(self, Acorners, trans_opts):
+        sx = trans_opts['sf'][0]
+        sy = trans_opts['sf'][1]
+        # 缩放矩阵
+        M = np.array([
+                [sx, 0, 0],
+                [0, sy, 0],
+                [0, 0, 1]])
+        Bcorners = self.PointsTrans(Acorners, M)
         return Bcorners
 
     def GenTrans_xz_GetCentral(self, Acorners, trans_opts):
@@ -632,6 +656,18 @@ class Trans(object):
         # print(xz_point)
         return xz_point
 
+    def PointsTrans(self, Acorners, M):
+        # 对四点对进行变换
+        xs = Acorners[:, 0]
+        ys = Acorners[:, 1]
+        zs = np.ones_like(xs)
+        homoc = np.array([xs, ys, zs])
+        homoc = np.matmul(M, homoc)
+        resx = (homoc[0, :]/homoc[2, :])
+        resy = (homoc[1, :]/homoc[2, :])
+        Bcorners = np.array([resx, resy]).transpose()
+        return Bcorners
+
     def BorderRect(self, pts):
         # 找到4个点的外框矩阵
         assert len(pts) == 4
@@ -664,10 +700,6 @@ class Board(object):
         self.imB = Obj(background, backgroundMask)
         self.flowA = Obj(backgroundFlow, backgroundMask)
         self.flowB = Obj(backgroundFlow, backgroundMask)
-#        self.SetNameManager(group_num, name_opts)
-#
-#    def SetNameManager(self, group_num, name_opts):
-#        self.nameManager = NameManager2(group_num, name_opts)
 
     def addTrans(self, trans):
         assert(isinstance(trans, Trans))
@@ -734,12 +766,3 @@ def flow_write(filename, uv, v=None):
     tmp.astype(np.float32).tofile(f)
     f.close()
 ###################################################################
-
-
-# test
-if __name__ == '__main__':
-    d = Point(10, 5)
-    a = Rect(Point(10, 5), [3, 4])
-    b = a.Central()
-    c = m.ones2([3, 4])
-    print(d)

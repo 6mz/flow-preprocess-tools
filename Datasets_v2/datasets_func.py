@@ -64,7 +64,14 @@ def RandomDis(minDis, maxDis):
     return np.array([x, y])
 
 
-def RandomAngle(minAngle, maxAngle=None, unit='rad'):
+def RandomAngle(minAngle, maxAngle=None, unit='r'):
+    '''
+    返回一个弧度为单位的角度
+    输入：
+        minDis: 格式：(x,y)，表示最小的x和y
+        maxDis: 格式：(x,y)，表示最大的x和y
+    '''
+    # 
     if maxAngle is None and minAngle > 0:
         maxAngle = minAngle
         minAngle = 0
@@ -74,3 +81,6 @@ def RandomAngle(minAngle, maxAngle=None, unit='rad'):
     angle = minAngle + \
         np.random.random() * (maxAngle - minAngle)
     return angle
+
+def RandAngle(meanAngle, maxAngle=None, unit='r'):
+    1
