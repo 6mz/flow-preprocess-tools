@@ -436,7 +436,11 @@ class Obj(object):
 
 
 ###################################################################
-TRANS_TYPE = ['M', 'py', 'xz', 'sf', 'ts']
+TRANS_TYPE = ['M', 'py', 'xz', 'sf', 'jq', 'ts']
+TRANS_TYPE_ENG = ['M', 'translation', 'rotation', 'scaling', 'shearing',
+                  'perspective ']  # 预留用于标准化命名 <_<
+TRANS_TYPE_ENG_ABBR = ['M', 't', 'r', 'sc', 'sh', 'p']  # 预留用于标准化命名 >_>
+
 DEFAULT_TRANS_OPTS = {
         # -------- M ---------
         'M': np.eye(3, 3),
@@ -454,6 +458,8 @@ DEFAULT_TRANS_OPTS = {
         'xz_central_global': Point(0, 0),
         # -------- sf ---------
         'sf': (1, 1),
+        # -------- jq ---------
+        'jq': (1, 1),
         }
 
 
@@ -464,6 +470,7 @@ def GetTransOpts():
 class Trans(object):
     def __init__(self, obj, id_=None):
         '''
+        定义一组从ObjA到ObjB的变换，并生成相应的光流
         '''
         assert(isinstance(obj, Obj))
         self.id = id_
@@ -612,6 +619,7 @@ class Trans(object):
         return Bcorners
 
     def GenTrans_sf(self, Acorners, trans_opts):
+        # 生成缩放变换
         sx = trans_opts['sf'][0]
         sy = trans_opts['sf'][1]
         # 缩放矩阵
@@ -622,13 +630,24 @@ class Trans(object):
         Bcorners = self.PointsTrans(Acorners, M)
         return Bcorners
 
+    def GenTrans_jq(self, Acorners, trans_opts):
+        # 生成剪切变换
+        shear_x = trans_opts['sf'][0]
+        shear_y = trans_opts['sf'][1]
+        M = np.array([
+                [1, shear_x, 0],
+                [shear_y, 1, 0],
+                [0,       0, 1]])
+        Bcorners = self.PointsTrans(Acorners, M)
+        return Bcorners
+
     def GenTrans_xz_GetCentral(self, Acorners, trans_opts):
         # 确定旋转中心
         xz_central = trans_opts['xz_central']
         if xz_central == 'self_central':
             xz_point = self.BorderRect(Acorners).Central(local=True)
-            shift = self.BorderRect(Acorners).rectPosPoint -\
-                    self.BorderRect(self.Acorners).rectPosPoint
+            shift = (self.BorderRect(Acorners).rectPosPoint -
+                     self.BorderRect(self.Acorners).rectPosPoint)
             xz_point = xz_point + shift
         elif xz_central == 'local':
             xz_c_local = trans_opts['xz_central_local']
@@ -657,7 +676,7 @@ class Trans(object):
         return xz_point
 
     def PointsTrans(self, Acorners, M):
-        # 对四点对进行变换
+        # 基于变换矩阵M对四点进行变换
         xs = Acorners[:, 0]
         ys = Acorners[:, 1]
         zs = np.ones_like(xs)
@@ -669,7 +688,7 @@ class Trans(object):
         return Bcorners
 
     def BorderRect(self, pts):
-        # 找到4个点的外框矩阵
+        # 找到四点的外框矩阵
         assert len(pts) == 4
         minx = 999999
         maxx = -999999

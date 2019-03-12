@@ -8,19 +8,23 @@ Point, Rect, RectArray, Obj, Trans, Board, GetTransOpts
 import datasets_func as func
 from NameManager2 import NameManager2, GetNameOpts
 
-
 img = Image.open('../data/ds_v2/timg.jpg')
 img = img.resize((256, 256))
 im = np.array(img)
 immask = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY) < 240
 
+img2 = Image.open('../data/ds_v2/timg2.jpg')
+img2 = img2.resize((256, 256))
+im2 = np.array(img2)
+immask2 = cv2.cvtColor(im2, cv2.COLOR_BGR2GRAY) < 200
+
 # 初始化 NameManager2
 num = 10
 name_opts = GetNameOpts()
-name_opts['target'] = '../data/ds_v2/TEST3_3'
-name_opts['sdir'] = ['show', 'show', 'flow', 'show', 'show', 'flow', 'show']
-name_opts['suffix'] = ['A', 'B', 'gtAB', 'gtAB_viz', 'C', 'gtBC', 'gtBC_viz']
-name_opts['ext'] = ['jpg', 'jpg', 'flo', 'jpg', 'jpg', 'flo', 'jpg']
+name_opts['target'] = '../data/ds_v2/TEST3_3_1'
+name_opts['sdir'] = ['show', 'show', 'show', 'show', 'show']
+name_opts['suffix'] = ['A', 'B', 'gtAB_viz', 'C', 'gtBC_viz']
+name_opts['ext'] = ['jpg', 'jpg', 'jpg', 'jpg', 'jpg']
 nm = NameManager2(num, name_opts)
 
 for i, name in enumerate(nm):
@@ -52,20 +56,20 @@ for i, name in enumerate(nm):
     trans2.QuickTrans(['py', 'xz'], trans_opts)
 
     trans3 = Trans(trans2.obj_imB)
-    trans_opts['xz_theta']
-    trans_opts['py']
+    trans_opts['xz_theta'] += func.NormalAngle(0, 1, 'd')
+    trans_opts['py'] += func.NormalDis(0, 2)
     trans3.QuickTrans(['py', 'xz'], trans_opts)
 
     mainboard1 = Board([640, 480])
     mainboard1.addTrans(trans2)
     mainboard1.Gen()
-    mainboard1.Save(dict(zip(['imA', 'imB', 'flowAB', 'flowAB_viz'],
-                             name[0:4])))
+    mainboard1.Save(dict(zip(['imA', 'imB', 'flowAB_viz'],
+                             name[0:3])))
 
     mainboard2 = Board([640, 480])
     mainboard2.addTrans(trans3)
     mainboard2.Gen()
-    mainboard2.Save(dict(zip(['imB', 'flowAB', 'flowAB_viz'],
-                             name[4:])))
+    mainboard2.Save(dict(zip(['imB', 'flowAB_viz'],
+                             name[3:])))
     print(f'完成:{i}/{num}')
 print('全部完成!')
