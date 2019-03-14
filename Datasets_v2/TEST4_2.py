@@ -13,6 +13,7 @@ import cv2
 from datasets_lib1 import \
     Point, Rect, RectArray, Obj, Trans, Board, GetTransOpts
 import datasets_func as func
+import datasets_func2 as func2
 from NameManager2 import NameManager2, GetNameOpts
 
 backgroud = Image.open('../data/ds_v2/back.jpg')
@@ -59,8 +60,8 @@ for i, name in enumerate(nm):
     #####################################
     # 1111111111111111111111111111111
     # 随机obj1的初始位置及大小
-    pos1 = func.RandomPoint([50, 50], [300, 300])
-    size1 = im.shape[0:2] 
+    pos1 = func2.RandomPoint([50, 50], [300, 300])
+    size1 = im.shape[0:2]
     # 初始化obj1
     obj1_rect = Rect(pos1, size1)
     obj1_data = RectArray(obj1_rect, 3)
@@ -89,7 +90,7 @@ for i, name in enumerate(nm):
     ###############################################
     # 2222222222222222222222222222222
     # 随机obj1的初始位置及大小
-    pos2 = func.RandomPoint([50, 50], [300, 300])
+    pos2 = func2.RandomPoint([50, 50], [300, 300])
     size2 = im2.shape[0:2]
     # 初始化obj1
     obj2_rect = Rect(pos2, size2)
@@ -119,7 +120,7 @@ for i, name in enumerate(nm):
     ###############################################
     # 33333333333333333333
     # 随机obj1的初始位置及大小
-    pos3 = func.RandomPoint([50, 50], [300, 300])
+    pos3 = func2.RandomPoint([50, 50], [300, 300])
     size3 = im2.shape[0:2]
     # 初始化obj1
     obj3_rect = Rect(pos3, size3)

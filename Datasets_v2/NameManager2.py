@@ -84,8 +84,9 @@ def SufCatExt(s, e):
 
 
 if __name__ == '__main__':
-    o = DEFAULT_NAME_MANAGER2_OPTIONS
-    o['target'] = '../data/ds_v2'
-    n = NameManager2(10, o)
-    for name in n:
-        print(name)
+    pass
+#    o = DEFAULT_NAME_MANAGER2_OPTIONS
+#    o['target'] = '../data/ds_v2'
+#    n = NameManager2(10, o)
+#    for name in n:
+#        print(name)

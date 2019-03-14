@@ -3,8 +3,6 @@
 
 """
 import numpy as np
-import mynumpy as m
-from datasets_lib1 import Point
 
 
 # ====================== 随机函数 ========================
@@ -14,6 +12,27 @@ def FindMinAndMax(in1, in2):
         return (in2, in1)
     else:
         return (in1, in2)
+
+
+def RandomScale(minScale, maxScale):
+    '''
+    返回一个scale矩阵(1*2)
+    输入：
+        minScale: 格式：(x,y)，表示最小的x和y缩放倍数
+        maxScale: 格式：(x,y)，表示最大的x和y缩放倍数
+    '''
+    assert(len(minScale) == len(maxScale) == 2)
+    (minx, maxx) = FindMinAndMax(minScale[0], minScale[0])
+    (miny, maxy) = FindMinAndMax(minScale[1], minScale[1])
+    assert((maxx >= minx >= 0)and(maxy >= miny >= 0))
+    x = np.random.uniform(minx, maxx)
+    y = np.random.uniform(miny, maxy)
+    return np.array([x, y])
+
+
+def NormalScale(meanScale, sigmaScale):
+    scale = np.random.normal(meanScale, sigmaScale, 1)[0]
+    return scale
 
 
 def RandomSize(minSize, maxSize):
@@ -30,23 +49,6 @@ def RandomSize(minSize, maxSize):
     x = np.random.random_integers(minx, maxx)
     y = np.random.random_integers(miny, maxy)
     return np.array([x, y])
-
-
-def RandomPoint(minPoint, maxPoint):
-    '''
-    返回一个Point
-    输入：
-        minPoint: 格式：Point或(x,y)，表示点的最小x和y
-        maxPoint: 格式：Point或(x,y)，表示点的最大x和y
-    '''
-    assert(isinstance(minPoint, Point) or len(minPoint) == 2)
-    assert(isinstance(maxPoint, Point) or len(maxPoint) == 2)
-    (minx, maxx) = FindMinAndMax(minPoint[0], maxPoint[0])
-    (miny, maxy) = FindMinAndMax(minPoint[1], maxPoint[1])
-    assert((maxx >= minx)and(maxy >= miny))
-    x = np.random.random_integers(minx, maxx)
-    y = np.random.random_integers(miny, maxy)
-    return Point(x, y)
 
 
 def RandomDis(minDis, maxDis):
@@ -91,8 +93,7 @@ def RandomAngle(minAngle, maxAngle=None, unit='r'):
     if unit == 'd' or unit == 'degree':
         maxAngle = maxAngle / 180 * np.pi
         minAngle = minAngle / 180 * np.pi
-    angle = minAngle + \
-        np.random.random() * (maxAngle - minAngle)
+    angle = np.random.normal(minAngle, maxAngle)
     return angle
 
 
@@ -102,6 +103,12 @@ def NormalAngle(mean=0, sigma=1, unit='r'):
         sigma = sigma / 180 * np.pi
     return np.random.normal(mean, sigma, 1)[0]
 
+
+def RandomLevel(levelDict):
+    lvN = list(levelDict.keys())
+    lvP = np.array(list(levelDict.values()))
+    lvP = lvP / np.sum(lvP)
+    return np.random.choice(lvN, p=lvP)
 
 # ==================== txt文件读写 ===========================
 def SaveList(fname, listname):

@@ -5,7 +5,6 @@ from PIL import Image
 import cv2
 
 import mynumpy as m
-from NameManager2 import NameManager2, DEFAULT_NAME_MANAGER2_OPTIONS
 
 ##################################################################
 '''
@@ -145,7 +144,7 @@ class Rect(object):
         '''
         if(isinstance(rectPos_Or_Rect, Point)):
             self.rectPosPoint = rectPos_Or_Rect()
-            assert(len(rectSize) == 2 and rectSize[0] >= 0 and rectSize[1] >= 0)
+            assert len(rectSize) == 2 and rectSize[0] >= 0 and rectSize[1] >= 0
             self.rectSize = np.array(rectSize, dtype=np.int)
         elif(isinstance(rectPos_Or_Rect, Rect)):
             rect = rectPos_Or_Rect()
@@ -248,8 +247,8 @@ class Rect(object):
         if ((size >= 0).all()):
             return Rect(Point(p1x, p1y), size)
         else:
-            print('WARRING: Rect.__and__:\
-                  The two rectangles do not coincide completely.')
+            print('WARRING: Rect.__and__:' +
+                  'There is no intersection between the two rectangles.')
             return None
 
     def __call__(self):
@@ -517,7 +516,8 @@ class Trans(object):
         self.transMatrix = M
         self.Bshift = shift
         self.TransData(M, M_shift, rectA, rectB)
-        self.GenFlow(M, rectA, rectB)
+        self.GenFlowAB(M, rectA)
+        self.GenFlowBA(M, rectB)
 
 # ==========================================
     def TransData(self, M, M_shift, rectA, rectB):
@@ -543,8 +543,8 @@ class Trans(object):
         self.obj_imB = Obj(imgArrayB, maskArrayB)
         return self.obj_imB
 
-    def GenFlow(self, M, rectA, rectB):
-        # 生成变换对应的光流
+    def GenFlowAB(self, M, rectA):
+        # 生成A->B变换对应的光流
         Awidth = rectA.rectSize[0]  # 宽度，列数
         Aheight = rectA.rectSize[1]
         maskA = self.obj_imA.rectDataMask
@@ -564,6 +564,29 @@ class Trans(object):
         maskArrayA.SetRectData(maskA)
         self.obj_flowA = Obj(FlowArrayA, maskArrayA)
         return self.obj_flowA
+
+    def GenFlowBA(self, M, rectB):  # 逆矩阵
+        # 生成B->A变换对应的光流
+        Bwidth = rectB.rectSize[0]  # 宽度，列数
+        Bheight = rectB.rectSize[1]
+        maskB = self.obj_imB.rectDataMask
+        r1 = range(0, Bwidth)   # x
+        r2 = range(0, Bheight)  # y
+        xs, ys = np.meshgrid(r1, r2)  # 齐次坐标(x,y,z)
+        zs = np.ones_like(xs)
+        homoc = np.array([xs.flatten(), ys.flatten(), zs.flatten()])
+        inv_M = np.linalg.inv(M)
+        homoc = np.matmul(inv_M, homoc)
+        resx = (homoc[0, :]/homoc[2, :]).reshape(Bheight, Bwidth) - xs
+        resy = (homoc[1, :]/homoc[2, :]).reshape(Bheight, Bwidth) - ys
+        flow = np.array((resx, resy)).transpose((1, 2, 0))
+        assert flow.shape == (Bheight, Bwidth, 2)
+        FlowArrayB = RectArray(rectB, 2, np.float)
+        FlowArrayB.SetRectData(flow)
+        maskArrayB = RectArray(rectB, 1, np.bool)
+        maskArrayB.SetRectData(maskB)
+        self.obj_flowB = Obj(FlowArrayB, maskArrayB)
+        return self.obj_flowB
 # ========================================
 
     def GenTrans(self, transType=None, trans_opts=DEFAULT_TRANS_OPTS):
@@ -602,7 +625,7 @@ class Trans(object):
         # 生成旋转变换，cv的旋转中心是RectA的左上角，故变换矩阵基于局部坐标系产生
         # 确定旋转中心
         xz_point = self.GenTrans_xz_GetCentral(Acorners, trans_opts)
-        xz_theta = trans_opts['xz_theta']
+        xz_theta = trans_opts['xz']
         assert isinstance(xz_theta, (float, int))
         # print(xz_theta)
         cos = np.cos(-xz_theta)
@@ -729,6 +752,7 @@ class Board(object):
             self.imA.AddObj(trans.obj_imA)
             self.imB.AddObj(trans.obj_imB)
             self.flowA.AddObj(trans.obj_flowA)
+            self.flowB.AddObj(trans.obj_flowB)
 
     def Save(self, dicts):
         if 'imA' in dicts:
@@ -742,15 +766,17 @@ class Board(object):
         if 'flowAB' in dicts:
             flow_write(dicts['flowAB'], self.flowA.rectData)
         if 'flowBA' in dicts:
-            imArray = np.uint8(self.flowB.rectData)
-            im = Image.fromarray(imArray)
-            im.show()
+            flow_write(dicts['flowBA'], self.flowB.rectData)
         if 'flowAB_viz' in dicts:
             flow_g = np.linalg.norm((self.flowA.rectData), axis=2)
             imArray = np.uint8(flow_g/(np.max(flow_g)+1)*255)
             im = Image.fromarray(imArray)
             im.save(dicts['flowAB_viz'])
-            return imArray
+        if 'flowBA_viz' in dicts:
+            flow_g = np.linalg.norm((self.flowB.rectData), axis=2)
+            imArray = np.uint8(flow_g/(np.max(flow_g)+1)*255)
+            im = Image.fromarray(imArray)
+            im.save(dicts['flowBA_viz'])
 
 ###################################################################
 
