@@ -19,7 +19,7 @@ import datasets_func as func
 
 # ===================== set ===========================
 TYPE_LIST = {
-        'material':['voc'],
+        'foreground':['voc'],
         'background':['bing'],
         }
 

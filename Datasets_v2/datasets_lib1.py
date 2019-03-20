@@ -5,7 +5,7 @@ from PIL import Image
 import cv2
 
 import mynumpy as m
-
+import datasets_func as func
 ##################################################################
 '''
 本文件是一个库文件，主要用于定义下列类：
@@ -302,7 +302,7 @@ class RectArray(object):
                         CSYS=CSYS, check=check)
 
     def SetRectData(self, rectData, copy=False):
-        # print(self.rectData.shape, rectData.shape)
+#        print(self.rectData.shape, rectData.shape)
         assert self.rectData.shape == rectData.shape
         if copy:
             rectData = rectData.copy()
@@ -466,10 +466,18 @@ def GetTransOpts():
     return deepcopy(DEFAULT_TRANS_OPTS)
 
 
+def GetTransInfo():
+    return (TRANS_TYPE, TRANS_TYPE_ENG, TRANS_TYPE_ENG_ABBR)
+
+
 class Trans(object):
     def __init__(self, obj, id_=None):
         '''
         定义一组从ObjA到ObjB的变换，并生成相应的光流
+        储存了imA、imB、flowAB和flowBA的数据 及 对应的变换矩阵
+        使用方法是先用obj_imA初始化Trans
+        然后使用 QuickTrans 或 GenTrans*多次+ImposeTrans 的组合生成变换
+        ImposeTrans后imB、flowAB和flowBA会自动生成
         '''
         assert(isinstance(obj, Obj))
         self.id = id_
@@ -484,11 +492,18 @@ class Trans(object):
         self.Bshift = np.array([0, 0])
         self.transMatrix = np.eye(3, dtype=np.float)
 
-    def QuickTrans(self, transTypes=None, trans_opts=DEFAULT_TRANS_OPTS):
+    def QuickTrans(self, operates=['M'], operates_opts=[DEFAULT_TRANS_OPTS]):
         # 组合了GenTrans和ImposeTrans达到一键生成的目的
-        # transTypes 是一个列表
-        for transType in transTypes:
-            self.GenTrans(transType, trans_opts)
+        # operates, operates_opts 都是列表,长度相等；
+        # 或是operates_opts的长度为1，则自动进行广播
+        len1 = len(operates)
+        len2 = len(operates_opts)
+        assert len1 == len2 or len2 == 1
+        if len2 == 1:
+            operates_opts = operates_opts*len1
+        for operate, trans_opts in zip(operates, operates_opts):
+            self.GenTrans(operate, trans_opts)
+            # print(operate, trans_opts)
         self.ImposeTrans()
 
     def ImposeTrans(self, pts=None):
@@ -513,6 +528,7 @@ class Trans(object):
 #        print(M)
 #        print(self.Acorners)
 #        print(self.Bcorners)
+#        print(rectA, rectB)
         self.transMatrix = M
         self.Bshift = shift
         self.TransData(M, M_shift, rectA, rectB)
@@ -595,6 +611,7 @@ class Trans(object):
         assert transType in TRANS_TYPE
         Acorners = self.Acorners
         Bcorners = self.Bcorners
+        trans_opts = deepcopy(trans_opts)
         if 'M' == transType:
             Bcorners = self.GenTrans_M(Bcorners, trans_opts)
         elif 'py' == transType:
@@ -603,6 +620,8 @@ class Trans(object):
             Bcorners = self.GenTrans_xz(Bcorners, trans_opts)
         elif 'sf' == transType:
             Bcorners = self.GenTrans_sf(Bcorners, trans_opts)
+        elif 'jq' == transType:
+            Bcorners = self.GenTrans_jq(Bcorners, trans_opts)
         self.Bcorners = np.float32(Bcorners)
         return (np.float32(Acorners), np.float32(Bcorners))
 
@@ -643,6 +662,7 @@ class Trans(object):
 
     def GenTrans_sf(self, Acorners, trans_opts):
         # 生成缩放变换
+        # print(trans_opts['sf'])
         sx = trans_opts['sf'][0]
         sy = trans_opts['sf'][1]
         # 缩放矩阵
@@ -764,50 +784,20 @@ class Board(object):
             im = Image.fromarray(imArray)
             im.save(dicts['imB'])
         if 'flowAB' in dicts:
-            flow_write(dicts['flowAB'], self.flowA.rectData)
+            func.flow_write(dicts['flowAB'], self.flowA.rectData)
         if 'flowBA' in dicts:
-            flow_write(dicts['flowBA'], self.flowB.rectData)
+            func.flow_write(dicts['flowBA'], self.flowB.rectData)
         if 'flowAB_viz' in dicts:
-            flow_g = np.linalg.norm((self.flowA.rectData), axis=2)
-            imArray = np.uint8(flow_g/(np.max(flow_g)+1)*255)
-            im = Image.fromarray(imArray)
+#            flow_g = np.linalg.norm((self.flowA.rectData), axis=2)
+#            imArray = np.uint8(flow_g/(np.max(flow_g)+1)*255)
+#            im = Image.fromarray(imArray)
+            im = Image.fromarray(func.viz_flow_color(self.flowA.rectData))
             im.save(dicts['flowAB_viz'])
         if 'flowBA_viz' in dicts:
-            flow_g = np.linalg.norm((self.flowB.rectData), axis=2)
-            imArray = np.uint8(flow_g/(np.max(flow_g)+1)*255)
-            im = Image.fromarray(imArray)
+#            flow_g = np.linalg.norm((self.flowB.rectData), axis=2)
+#            imArray = np.uint8(flow_g/(np.max(flow_g)+1)*255)
+#            im = Image.fromarray(imArray)
+            im = Image.fromarray(func.viz_flow_color(self.flowB.rectData))
             im.save(dicts['flowBA_viz'])
 
-###################################################################
-
-
-def flow_write(filename, uv, v=None):
-    """ Write optical flow to file.
-    If v is None, uv is assumed to contain both u and v channels,
-    stacked in depth.
-    Original code by Deqing Sun, adapted from Daniel Scharstein.
-    """
-    nBands = 2
-
-    if v is None:
-        assert(uv.ndim == 3)
-        assert(uv.shape[2] == 2)
-        u = uv[:, :, 0]
-        v = uv[:, :, 1]
-    else:
-        u = uv
-
-    assert(u.shape == v.shape)
-    height, width = u.shape
-    f = open(filename, 'wb')
-    TAG_CHAR = b'PIEH'
-    f.write(TAG_CHAR)
-    np.array(width).astype(np.int32).tofile(f)
-    np.array(height).astype(np.int32).tofile(f)
-    # arrange into matrix form
-    tmp = np.zeros((height, width*nBands))
-    tmp[:, np.arange(width)*2] = u
-    tmp[:, np.arange(width)*2 + 1] = v
-    tmp.astype(np.float32).tofile(f)
-    f.close()
 ###################################################################

@@ -31,8 +31,8 @@ def RandomScale(minScale, maxScale):
 
 
 def NormalScale(meanScale, sigmaScale):
-    scale = np.random.normal(meanScale, sigmaScale, 1)[0]
-    return scale
+    scale = np.random.normal(meanScale, sigmaScale, 2)
+    return np.array(scale)
 
 
 def RandomSize(minSize, maxSize):
@@ -110,6 +110,7 @@ def RandomLevel(levelDict):
     lvP = lvP / np.sum(lvP)
     return np.random.choice(lvN, p=lvP)
 
+
 # ==================== txt文件读写 ===========================
 def SaveList(fname, listname):
     with open(fname, 'w') as f:
@@ -122,3 +123,135 @@ def ReadList(fname):
         lists = [line.strip()
                  for line in f.readlines() if len(line.strip()) > 0]
     return lists
+
+
+# ================== 光流输出 ==========================
+def flow_write(filename, uv, v=None):
+    """ Write optical flow to file.
+    If v is None, uv is assumed to contain both u and v channels,
+    stacked in depth.
+    Original code by Deqing Sun, adapted from Daniel Scharstein.
+    """
+    nBands = 2
+
+    if v is None:
+        assert(uv.ndim == 3)
+        assert(uv.shape[2] == 2)
+        u = uv[:, :, 0]
+        v = uv[:, :, 1]
+    else:
+        u = uv
+
+    assert(u.shape == v.shape)
+    height, width = u.shape
+    f = open(filename, 'wb')
+    TAG_CHAR = b'PIEH'
+    f.write(TAG_CHAR)
+    np.array(width).astype(np.int32).tofile(f)
+    np.array(height).astype(np.int32).tofile(f)
+    # arrange into matrix form
+    tmp = np.zeros((height, width*nBands))
+    tmp[:, np.arange(width)*2] = u
+    tmp[:, np.arange(width)*2 + 1] = v
+    tmp.astype(np.float32).tofile(f)
+    f.close()
+
+
+def viz_flow_color(uv, v=None, logscale=True, scaledown=6, output=False):
+    """
+    topleft is zero, u is horiz, v is vertical
+    red is 3 o'clock, yellow is 6, light blue is 9, blue/purple is 12
+    """
+    if v is None:
+        assert(uv.ndim == 3)
+        assert(uv.shape[2] == 2)
+        u = uv[:, :, 0]
+        v = uv[:, :, 1]
+    else:
+        u = uv
+    colorwheel = makecolorwheel()
+    ncols = colorwheel.shape[0]
+
+    radius = np.sqrt(u**2 + v**2)
+    if output:
+        print("Maximum flow magnitude: %04f" % np.max(radius))
+    if logscale:
+        radius = np.log(radius + 1)
+        if output:
+            print("Maximum flow magnitude (after log): %0.4f" % np.max(radius))
+    radius = radius / scaledown
+    if output:
+        print(
+            "Maximum flow magnitude (after scaledown): %0.4f" % np.max(radius))
+    rot = np.arctan2(-v, -u) / np.pi
+
+    fk = (rot+1)/2 * (ncols-1)  # -1~1 maped to 0~ncols
+    k0 = fk.astype(np.uint8)       # 0, 1, 2, ..., ncols
+
+    k1 = k0+1
+    k1[k1 == ncols] = 0
+
+    f = fk - k0
+
+    ncolors = colorwheel.shape[1]
+    img = np.zeros(u.shape+(ncolors,))
+    for i in range(ncolors):
+        tmp = colorwheel[:, i]
+        col0 = tmp[k0]
+        col1 = tmp[k1]
+        col = (1-f)*col0 + f*col1
+
+        idx = radius <= 1
+        # increase saturation with radius
+        col[idx] = 1 - radius[idx]*(1-col[idx])
+        # out of range    
+        col[~idx] *= 0.75
+        img[:,:,i] = np.floor(255*col).astype(np.uint8)
+
+    return img.astype(np.uint8)
+
+
+def makecolorwheel():
+    # Create a colorwheel for visualization
+    RY = 15
+    YG = 6
+    GC = 4
+    CB = 11
+    BM = 13
+    MR = 6
+
+    ncols = RY + YG + GC + CB + BM + MR
+
+    colorwheel = np.zeros((ncols, 3))
+
+    col = 0
+    # RY
+    colorwheel[0:RY, 0] = 1
+    colorwheel[0:RY, 1] = np.arange(0, 1, 1./RY)
+    col += RY
+
+    # YG
+    colorwheel[col:col+YG, 0] = np.arange(1, 0, -1./YG)
+    colorwheel[col:col+YG, 1] = 1
+    col += YG
+
+    # GC
+    colorwheel[col:col+GC, 1] = 1
+    colorwheel[col:col+GC, 2] = np.arange(0, 1, 1./GC)
+    col += GC
+
+    # CB
+    colorwheel[col:col+CB, 1] = np.arange(1, 0, -1./CB)
+    colorwheel[col:col+CB, 2] = 1
+    col += CB
+
+    # BM
+    colorwheel[col:col+BM, 2] = 1
+    colorwheel[col:col+BM, 0] = np.arange(0, 1, 1./BM)
+    col += BM
+
+    # MR
+    colorwheel[col:col+MR, 2] = np.arange(1, 0, -1./MR)
+    colorwheel[col:col+MR, 0] = 1
+
+    return colorwheel

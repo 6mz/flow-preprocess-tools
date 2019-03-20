@@ -5,8 +5,6 @@ import copy
 
 DEFAULT_NAME_MANAGER2_OPTIONS = {
         'target': 'TARGET DIR',
-         # 操作，与dataset_lib1中的Board类的Save函数中的相一致
-        'operation': ['imA', 'imB', 'flowAB'],
         'sdir': ['A', 'B', 'gtAB'],
         'prefix': None,
         'suffix': ['A', 'B', 'gtAB'],
@@ -19,47 +17,40 @@ def GetNameOpts():
 
 
 class NameManager2(object):
-    def __init__(self, num, name_opts=DEFAULT_NAME_MANAGER2_OPTIONS,
-                 start=0, countinue=False):
+    def __init__(self, num, name_opts=DEFAULT_NAME_MANAGER2_OPTIONS):
         self.num = num
         self.target = None
-        self.operation = []
         self.fdir = []
         self.head = []
         self.end = []
-        # count
-        self.count = start
-        self.start = start
-        self.countinue = countinue
         self.check(name_opts)
 
     def check(self, name_opts):
         assert name_opts['target'] != 'TARGET DIR'
-        self.operation = name_opts['operation']
-        gn = len(self.operation)
-        # 判断操作合法性
-        assert set(name_opts['operation']).issubset(
-                set(['imA', 'imB', 'flowAB', 'flowBA',
-                     'flowAB_viz', 'flowBA_viz']))
-        # 判断长度一致性
+        sdir = name_opts['sdir']
+        if isinstance(sdir, list):
+            gn = len(sdir)
+        elif isinstance(sdir, str):
+            gn = 1
+        else:
+            gn = 0
+            print('WARRING: NameManager2: sdir is empty')
+        self.group_num = gn
         assert not name_opts['prefix'] or len(name_opts['prefix']) == gn
         assert not name_opts['suffix'] or len(name_opts['suffix']) == gn
-        assert len(name_opts['sdir']) == gn
         assert len(name_opts['ext']) == gn
         self.target = name_opts['target']
         self.fdir = list(map(
                 os.path.join, [self.target] * gn, name_opts['sdir']))
-        # 创建子文件夹
         for dir_ in self.fdir:
+            pass
             if not os.path.exists(dir_):
                 os.makedirs(dir_)
                 print(f'INFO: Create {dir_}')
-        # 生成前缀名
         if name_opts['prefix'] is None:
             self.head = ['' for i in range(gn)]
         else:
             self.head = name_opts['prefix']
-        # 生成后缀名
         if name_opts['suffix'] is None:
             self.end = list(map(
                     SufCatExt, ['' for i in range(gn)], name_opts['ext']))
@@ -67,22 +58,19 @@ class NameManager2(object):
             self.end = list(map(
                     SufCatExt, name_opts['suffix'], name_opts['ext']))
 
-    def name_dict(self, c):
-        # 生成对应序号的操作和名称字典
+    def name(self, c):
         names = []
         for d, h, e in zip(self.fdir, self.head, self.end):
             names.append(os.path.join(d, h + str(c) + e))
-        assert len(self.operation) == len(names)
-        return list(zip(self.operation, names))
+        return names
 
     def __iter__(self):
-        if not self.countinue:
-            self.count = self.start
+        self.count = 0
         return self
 
     def __next__(self):
         if self.count < self.num:
-            x = self.name_dict(self.count)
+            x = self.name(self.count)
             self.count += 1
             return x
         else:

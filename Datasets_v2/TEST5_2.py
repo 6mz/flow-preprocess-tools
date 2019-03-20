@@ -31,9 +31,9 @@ materialGenerator = RandomImg('voc')
 #immask3 = cv2.cvtColor(im3, cv2.COLOR_BGR2GRAY) > 30
 
 # 设置参数
-iter_num = 10
+iter_num = 1
 board_num = 2
-obj_num = 5
+obj_num = 6
 board_size = [512, 384]
 obj_minIniPos = [0, 0]
 obj_maxIniPos = [480, 360]
@@ -42,7 +42,9 @@ background_maxIniPos = [-100, -100]
 background_size = [1366, 768]
 # 初始化 NameManager2
 name_opts = GetNameOpts()
-name_opts['target'] = '../data/ds_v2/TEST5_2'
+name_opts['operation'] = ['imB', 'imB', 'flowBA', 'flowBA_viz',
+                          'imB', 'flowAB', 'flowAB_viz']
+name_opts['target'] = '../data/ds_v2/TEST5_2_1'
 name_opts['sdir'] = ['show', 'show', 'flow', 'show',
                      'show', 'flow', 'show']
 name_opts['suffix'] = ['A', 'B', 'gtBA', 'gtBA_viz',
@@ -52,7 +54,8 @@ name_opts['ext'] = ['png', 'png', 'flo', 'jpg',
 nm = NameManager2(iter_num, name_opts)
 
 
-for i, name in enumerate(nm):
+for i, name_dict in enumerate(nm):
+    name = list(zip(*name_dict))[1]
     # =============== 初始化区域 ==================
     # 背景
     # 初始化位置，大小
@@ -69,7 +72,7 @@ for i, name in enumerate(nm):
     # 生成背景变换
     trans_back = Trans(obj_back)
     trans_back_opts = GetTransOpts()
-    trans_back.QuickTrans('M', trans_back_opts)
+    trans_back.QuickTrans(['M'], [trans_back_opts])
     # 创建列表储存初始化的obj
     obj_list = [trans_back.obj_imB]  # 初始化obj列表
     # initboard 用于保存第一帧
@@ -95,7 +98,7 @@ for i, name in enumerate(nm):
         trans_opts = GetTransOpts()
         trans_opts['xz_theta'] = func.RandomAngle(-np.pi/2, np.pi/2)
         trans_opts['py'] = func.RandomDis((-100, -100), (100, 100))
-        trans.QuickTrans(['py', 'xz'], trans_opts)
+        trans.QuickTrans(['py', 'xz'], [trans_opts])
         # 更新board
         initboard.addTrans(trans)
         # 存入列表
@@ -116,7 +119,7 @@ for i, name in enumerate(nm):
     trans_back_opts['py'] = func.RandomDis((-5, -5), (5, 5))
     trans_back_opts['sf'] = func.RandomScale((0.98, 0.98), (1.02, 1.02))
     # <>
-    trans_back.QuickTrans(['py', 'xz', 'sf'], trans_back_opts)
+    trans_back.QuickTrans(['py', 'xz', 'sf'], [trans_back_opts])
     mainboard = Board(board_size)
     mainboard.addTrans(trans_back)
     # 保存修改
@@ -130,7 +133,7 @@ for i, name in enumerate(nm):
         # 首次生成用于生成光流的trans opts
         trans_opts['xz'] = func.RandomAngle(-np.pi/36, np.pi/36)
         trans_opts['py'] = func.RandomDis((-20, -20), (20, 20))
-        trans.QuickTrans(['py', 'xz'], trans_opts)
+        trans.QuickTrans(['py', 'xz'], [trans_opts])
         # 更新board
         mainboard.addTrans(trans)
         # 存入列表
@@ -154,7 +157,7 @@ for i, name in enumerate(nm):
         trans_back_opts['py'] += func.NormalDis(0, 1)
         trans_back_opts['sf'] += func.NormalScale(0, 0.004)
         # <>
-        trans_back.QuickTrans(['py', 'xz', 'sf'], trans_back_opts)
+        trans_back.QuickTrans(['py', 'xz', 'sf'], [trans_back_opts])
         mainboard = Board(board_size)
         mainboard.addTrans(trans_back)
         # 保存修改
@@ -167,7 +170,7 @@ for i, name in enumerate(nm):
             # 这里对opt里面的内容进行微调
             trans_opts['xz'] += func.NormalAngle(0, 1, 'd')
             trans_opts['py'] += func.NormalDis(0, 2)
-            trans.QuickTrans(['py', 'xz'], trans_opts)
+            trans.QuickTrans(['py', 'xz'], [trans_opts])
             # 更新board
             mainboard.addTrans(trans)
             # 存入列表
@@ -180,5 +183,5 @@ for i, name in enumerate(nm):
         name_front += 3
         mainboard.Save(name_dict)
 
-    print(f'完成:{i}/{iter_num}')
+    print(f'完成:{i+1}/{iter_num}')
 print('全部完成!')
