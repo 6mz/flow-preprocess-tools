@@ -27,6 +27,8 @@ Board:
 '''
 ###################################################################
 
+DEBUG = False
+
 
 class Point(object):
     '''
@@ -247,8 +249,9 @@ class Rect(object):
         if ((size >= 0).all()):
             return Rect(Point(p1x, p1y), size)
         else:
-            print('WARRING: Rect.__and__:' +
-                  'There is no intersection between the two rectangles.')
+            if DEBUG == True:
+                print('WARRING: Rect.__and__:' +
+                      'There is no intersection between the two rectangles.')
             return None
 
     def __call__(self):

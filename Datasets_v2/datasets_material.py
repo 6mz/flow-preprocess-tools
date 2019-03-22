@@ -20,7 +20,7 @@ import datasets_func as func
 # ===================== set ===========================
 TYPE_LIST = {
         'foreground':['voc'],
-        'background':['bing'],
+        'background':['bing', 'sky'],
         }
 
 DEFAULT_MATERIAL_VOC_OPTS = {
@@ -36,9 +36,17 @@ DEFAULT_BACKGROUND_BING_OPTS = {
                 "background\\bing-gallery-1366x768"),
         }
 
+DEFAULT_BACKGROUND_SKY_OPTS = {
+        'path': (
+                "E:\\GitProgram\\preprocess-tools\\data\\ds_v2_material\\" +
+                "background\\sky"),
+        }
+
+
 DEFAULT_OPTS_LIST = {
                     'voc': DEFAULT_MATERIAL_VOC_OPTS,
                     'bing': DEFAULT_BACKGROUND_BING_OPTS,
+                    'sky': DEFAULT_BACKGROUND_SKY_OPTS
                     }
 
 
@@ -104,6 +112,8 @@ class RandomImg(object):
             self.init_voc()
         elif name == 'bing':
             self.init_bing()
+        elif name == 'sky':
+            self.init_sky()
 
 # 初始化区
     def init_voc(self):
@@ -120,6 +130,12 @@ class RandomImg(object):
         bingList = ReadList(path)
         self.list = bingList
 
+    def init_sky(self):
+        path = self.opts['path']
+        assert os.path.exists(path)
+        skyList = ReadList(path)
+        self.list = skyList
+
 
 # 获取区
     def RandomGet(self):
@@ -128,6 +144,8 @@ class RandomImg(object):
             return self.RandomGet_VOC()
         elif self.name == 'bing':
             return self.RandomGet_bing()
+        elif self.name == 'sky':
+            return self.RandomGet_sky()
 
     def RandomGet_VOC(self):
         # 随机一对图片
@@ -135,20 +153,28 @@ class RandomImg(object):
         randLv = func.RandomLevel(levelProbabilityTables)
         lvCatalogList = self.__vocLevel[randLv]
         lvItemList = self.list.Get(lvCatalogList)
-        exists = False
-        while not exists:
+        isexists = False
+        while not isexists:
             item = np.random.choice(lvItemList)
             imName, maName = item.split('+')
-            exists = os.path.exists(imName) & os.path.exists(maName)
+            isexists = os.path.exists(imName) & os.path.exists(maName)
         img = Image.open(imName)
         mask = Image.open(maName)
         return (img, mask)  # 返回Image对象
 
     def RandomGet_bing(self):
-        exists = False
-        while not exists:
+        isexists = False
+        while not isexists:
             item = np.random.choice(self.list)
-            exists = os.path.exists(item)
+            isexists = os.path.exists(item)
+        img = Image.open(item)
+        return img  # 返回Image对象(背景图只返回图片，没有mask)
+
+    def RandomGet_sky(self):
+        isexists = False
+        while not isexists:
+            item = np.random.choice(self.list)
+            isexists = os.path.exists(item)
         img = Image.open(item)
         return img  # 返回Image对象(背景图只返回图片，没有mask)
 

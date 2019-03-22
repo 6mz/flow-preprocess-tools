@@ -6,11 +6,11 @@ import copy
 DEFAULT_NAME_MANAGER2_OPTIONS = {
         'target': 'TARGET DIR',
          # 操作，与dataset_lib1中的Board类的Save函数中的相一致
-        'operation': ['imA', 'imB', 'flowAB'],
-        'sdir': ['A', 'B', 'gtAB'],
+        'operation': ['imA', 'imB', 'flowAB_viz'],
+        'sdir': ['A', 'B', 'viz_gtAB'],
         'prefix': None,
-        'suffix': ['A', 'B', 'gtAB'],
-        'ext': ['jpg', 'jpg', 'flo']
+        'suffix': ['A', 'B', 'viz_gtAB'],
+        'ext': ['png', 'png', 'jpg']
         }
 
 
@@ -67,7 +67,7 @@ class NameManager2(object):
             self.end = list(map(
                     SufCatExt, name_opts['suffix'], name_opts['ext']))
 
-    def name_dict(self, c):
+    def Name_dict(self, c):
         # 生成对应序号的操作和名称字典
         names = []
         for d, h, e in zip(self.fdir, self.head, self.end):
@@ -82,7 +82,7 @@ class NameManager2(object):
 
     def __next__(self):
         if self.count < self.num:
-            x = self.name_dict(self.count)
+            x = self.Name_dict(self.count)
             self.count += 1
             return x
         else:
