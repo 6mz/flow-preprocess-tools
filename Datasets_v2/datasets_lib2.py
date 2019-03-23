@@ -21,6 +21,7 @@ DEFAULT_MAINBOARD_OPTS = {
         # =====        前景          =====
         # ===============================
         'foreground_name': 'voc',
+        'foreground_RandomImg_opts': None,  # None 表示自动根据foreground_name读取
         # 前景物体的初始位置，auto表示全画幅随机，define表示自定义随机位置的参数
         'foreground_iniPosMethod': 'auto',  # ['auto', 'define']
         # 前景物体初始位置的对齐点，central表示随机的是中心点，topleft表示左上角角点
@@ -29,11 +30,12 @@ DEFAULT_MAINBOARD_OPTS = {
         'foreground_minIniPos': [0, 0],
         'foreground_maxIniPos': [480, 360],
         # 控制前景不要太大的临界值
-        'foreground_size': [200, 180],
+        'foreground_size': [150, 100],
         # ===============================
         # =====        背景          =====
         # ===============================
         'background_name': 'bing',
+        'background_RandomImg_opts': None,
         # 背景的初始化方法，有中间切片、随机切片、缩放、自定义
         'background_iniMethod': 'slice_random',
         # in ['slice_central', 'slice_random', 'zoom', 'define']
@@ -73,8 +75,12 @@ class TransOptsManager(object):
     '''
     def __init__(self, id_=None):
         self.id = id_
+        # 注意TransOptsManager只管理单个对象，但是可以被多个对象共用，且如果使用随机函数则
+        # 每个对象的变换参数也会不同，但是他们来自于同一个形式的随机函数
+
+        # 唯一的操作号：操作过程（可能包含函数，用于产生<操作结果>）
         self.operates_dict = {}
-        self.operates_data = {}
+        self.operates_data = {}  # 唯一的操作号：操作结果（固定值，用于导入Trans）
         self.c = count()
         self.mode = 'cover'
         #
@@ -82,7 +88,7 @@ class TransOptsManager(object):
         self.TRANS_OPTSLIST = GetTransOpts().keys()
 
     def SetMode(self, mode='modify'):
-        assert mode in ['cover', 'c', 'modify', 'm']
+        assert mode in ['cover', 'c', 'modify', 'm', 'const']
         if mode == 'c':
             mode = 'cover'
         if mode == 'm':
@@ -146,31 +152,50 @@ class TransOptsManager(object):
 
     def Get(self):
         # 获取参数，随机函数在此时生效
-        operates_dict = self.operates_dict
+        operates_dict = self.operates_dict  # 获取值产生器
+        operates_data = self.operates_data
         operates = []
         operates_opts = []
-        for mark in operates_dict:
-            operate, trans_opts = self.operates_data[mark]
-            if(self.mode == 'cover'):
+        for mark in operates_dict:  # 对于对象的每个操作
+            # 获得操作类型 和 参数
+            operate, trans_opts = operates_data[mark]
+            if(self.mode == 'cover'):  # 如果是覆盖模式,则重新生成新的 参数
                 trans_opts = GetTransOpts()
-            for item in operates_dict[mark]:
+            for item in operates_dict[mark]:  # 对于值产生器的每一个操作
                 sub_opt = operates_dict[mark][item]
-                types = sub_opt[0]
+                types = sub_opt[0]  # 值产生器类型，固定值或函数
                 if types is 'const':
                     value = sub_opt[1]
                 elif types is 'func':
                     fun = sub_opt[1]
                     parameter = sub_opt[2]
                     value = fun(*parameter)
-                if value is not None:
+                if value is not None:  # 根据覆盖、调整、不变对原来的 参数 进行修改
                     if(self.mode == 'cover'):
                         trans_opts[item] = value
-                    else:
+                    elif(self.mode == 'modify'):
                         trans_opts[item] += value
+                    else:
+                        pass
             operates.append(operate)
             operates_opts.append(trans_opts)
-            self.operates_data[mark][1] = trans_opts
+            operates_data[mark][1] = trans_opts  # 引用赋值，改变了变量
         return (operates, operates_opts)
+
+    def Copyfrom(self, other):
+        # 拷贝副本，但是保留本地的私人数据
+        assert isinstance(other, TransOptsManager)
+        if other.mode == 'cover':
+            self.operates_dict = deepcopy(other.operates_dict)
+            self.operates_data = deepcopy(other.operates_data)
+        else:
+            # z = {**x, **y} y覆盖x
+            self.operates_dict = deepcopy(
+                    {**self.operates_dict, **other.operates_dict})
+            self.operates_data = deepcopy(
+                    {**other.operates_data, **self.operates_data})
+        self.c = other.c
+        self.mode = other.mode
 
 
 class MainBoard(object):
@@ -198,8 +223,43 @@ class MainBoard(object):
     def initRandomImgGenerator(self):
         back_name = self.opts['background_name']
         fore_name = self.opts['foreground_name']
-        self.backgroundGenerator = RandomImg(back_name)
-        self.foregroundGenerator = RandomImg(fore_name)
+        back_opts = self.opts['background_RandomImg_opts']
+        fore_opts = self.opts['foreground_RandomImg_opts']
+        # back
+        if isinstance(back_name, str):
+            if back_opts is None:
+                back_opts = GetRandomImgOpts(back_name)
+        elif isinstance(back_name, list):
+            assert back_opts is None or len(back_opts) == len(back_name)
+            if back_opts is None:
+                back_name = np.random.choice(back_name)
+                back_opts = GetRandomImgOpts(back_name)
+            else:
+                ids = np.random.randint(0, len(back_name))
+                back_name = back_name[ids]
+                if back_opts[ids] is None:
+                    back_opts = GetRandomImgOpts(back_name)
+                else:
+                    back_opts = back_opts[ids]
+        # fore
+        if isinstance(fore_name, str):
+            if fore_opts is None:
+                fore_opts = GetRandomImgOpts(fore_name)
+        elif isinstance(fore_name, list):
+            assert fore_opts is None or len(fore_opts) == len(fore_name)
+            if fore_opts is None:
+                fore_name = np.random.choice(fore_name)
+                fore_opts = GetRandomImgOpts(fore_name)
+            else:
+                ids = np.random.randint(0, len(fore_name))
+                fore_name = fore_name[ids]
+                if fore_opts[ids] is None:
+                    fore_opts = GetRandomImgOpts(fore_name)
+                else:
+                    fore_opts = fore_opts[ids]
+        # 赋值
+        self.backgroundGenerator = RandomImg(back_name, back_opts)
+        self.foregroundGenerator = RandomImg(fore_name, fore_opts)
 
     def initBackground(self, numid=0):
         # 用于初始化背景对象
@@ -282,6 +342,7 @@ class MainBoard(object):
         back_datamask.SetValue(True)
         obj_back = Obj(back_data, back_datamask)
         self.objDict[numid] = obj_back
+        self.transOptsDict[numid] = TransOptsManager()  # 私人变换数据
 
     def initBackground_check(self, backgroud, check=None):
         check = self.opts['background_check'] if check is None else check
@@ -300,6 +361,7 @@ class MainBoard(object):
 
     def initForeground(self, numid):
         # 用于初始化前景对象
+        board_size = self.opts['board_size']
         froe_minpos = self.opts['foreground_minIniPos']
         froe_maxpos = self.opts['foreground_maxIniPos']
         foreground_iniPos = self.opts['foreground_iniPosMethod']
@@ -309,37 +371,42 @@ class MainBoard(object):
         foreground_size = self.opts['foreground_size']
         # 读入前景
         img, imgmask = self.foregroundGenerator.RandomGet()
-        # <更改前景大小加在这里></>
         froesize = np.array(img.size)  # (x,y)
         if (froesize > foreground_size).any():
             b = np.max(froesize / foreground_size)
+            b = 1 if b < 1 else b  # 以防万一
             froesize = np.array(
-                    froesize / (b * np.random.uniform(0, 1)), dtype=np.int)
+                    froesize/(1+(b-1)*np.random.uniform(0, 1)), dtype=np.int)
             img = img.resize(froesize)
             imgmask = imgmask.resize(froesize)
         im = np.array(img)
         immask = np.array(imgmask) > 0
         if foreground_iniPos == 'auto':
-            pos = func2.RandomPoint((0, 0), froesize)
+            pos = func2.RandomPoint((0, 0), board_size)
         elif foreground_iniPos == 'define':
             pos = func2.RandomPoint(froe_minpos, froe_maxpos)
         if foreground_iniPosStandard == 'central':
+            # print(pos)
             pos = pos - froesize/2
         elif foreground_iniPosStandard == 'topleft':
             pass
-        print(pos)
         froe_rect = Rect(pos, froesize)
+        # print(froe_rect)
         froe_data = RectArray(froe_rect, 3)
         froe_data.SetRectData(im)
         froe_datamask = RectArray(froe_rect, 1, dtype=np.bool)
         froe_datamask.SetValue(immask)
         obj_froe = Obj(froe_data, froe_datamask)
         self.objDict[numid] = obj_froe
+        self.transOptsDict[numid] = TransOptsManager()  # 私人变换数据
     # ==========================================
 
     def SetTransOptsDict(self, id_, transOM):
         assert id_ in ['back', 'fore'] or id_ in self.objDict
-        self.transOptsDict[id_] = transOM
+        if id_ in self.objDict:
+            self.transOptsDict[id_] = transOM
+        else:
+            self.transOptsDict[id_] = transOM
 
     def GetTransOpts(self, id_):
         assert id_ in ['back', 'fore'] or id_ in self.objDict
@@ -351,16 +418,32 @@ class MainBoard(object):
     # ==========================
     def TransAllOnce(self, nameDict):
         # 产生一次图
+        # 对于背景
         back_transOM = self.GetTransOpts('back')
         obj_back = self.objDict[0]
         self.objDict[0] = TransSingalOnce(obj_back, self.board, back_transOM)
         for i in range(self.obj_num):
+            # 对于所有的前景
             fore_transOM = self.GetTransOpts('fore')
+            obj_transOM = self.GetTransOpts(i+1)
+            # 从前景拷贝副本，但是保留自身的变换矩阵
+            obj_transOM.Copyfrom(fore_transOM)
             obj_fore = self.objDict[i+1]  # 0是背景
-            obj_fore_ = TransSingalOnce(obj_fore, self.board, fore_transOM)
+            obj_fore_ = TransSingalOnce(obj_fore, self.board, obj_transOM)
             self.objDict[i+1] = obj_fore_
         self.board.Gen()
         self.board.Save(nameDict)
+
+
+#def DeepCopytransOM(other):
+#        assert isinstance(other, TransOptsManager)
+#        # z = {**x, **y} y覆盖x
+#        a = TransOptsManager()
+#        a.operates_dict = deepcopy(other.operates_dict)
+#        a.operates_data = deepcopy(other.operates_data)
+#        a.c = deepcopy(other.c)
+#        a.mode = deepcopy(other.mode)
+#        return a
 
 
 def TransSingalOnce(obj, board, transOM):

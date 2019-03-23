@@ -3,6 +3,7 @@ import os
 import numpy as np
 from PIL import Image
 from copy import deepcopy
+import platform
 
 from VOC_lib import ListMannager
 import datasets_func as func
@@ -16,30 +17,28 @@ import datasets_func as func
 4.定义随机获取函数
 '''
 
-
+if platform.system() == 'Windows':
+    material_path = "E:/GitProgram/preprocess-tools/data/ds_v2_material"
+elif platform.system() == 'Linux':
+    system = 'linux'
 # ===================== set ===========================
 TYPE_LIST = {
-        'foreground':['voc'],
-        'background':['bing', 'sky'],
+        'foreground': ['voc'],
+        'background': ['bing', 'sky'],
         }
 
 DEFAULT_MATERIAL_VOC_OPTS = {
-        'path': (
-                "E:\\GitProgram\\preprocess-tools\\data\\ds_v2_material\\" +
-                "voc\\_Annotations"),
-        'level': {0: 0.05, 1: 0.25, 2: 0.25, 3: 0.25, 4: 0.2},
+        'path': os.path.join(material_path, "voc\\_Annotations"),
+        'level': {0: 0.2, 1: 0.25, 2: 0.25, 3: 0.2, 4: 0.1},
         }
 
 DEFAULT_BACKGROUND_BING_OPTS = {
-        'path': (
-                "E:\\GitProgram\\preprocess-tools\\data\\ds_v2_material\\" +
-                "background\\bing-gallery-1366x768"),
+        'path': os.path.join(material_path,
+                             "background\\bing-gallery-1366x768"),
         }
 
 DEFAULT_BACKGROUND_SKY_OPTS = {
-        'path': (
-                "E:\\GitProgram\\preprocess-tools\\data\\ds_v2_material\\" +
-                "background\\sky"),
+        'path': os.path.join(material_path, "background\\sky"),
         }
 
 
@@ -52,7 +51,7 @@ DEFAULT_OPTS_LIST = {
 
 #
 def GetRandomImgOpts(name):
-    return deepcopy(DEFAULT_OPTS_LIST[name])
+        return deepcopy(DEFAULT_OPTS_LIST[name])
 
 
 # ================== func ==========================

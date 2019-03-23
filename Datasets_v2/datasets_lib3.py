@@ -156,7 +156,7 @@ class Step(object):
 
     def __next__(self):
         count = self.count
-        if count > len(self.name_dict_list):
+        if count >= len(self.name_dict_list):
             raise StopIteration
         if self.count == 0:
             self.count += 1

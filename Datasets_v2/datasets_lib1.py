@@ -508,6 +508,7 @@ class Trans(object):
             self.GenTrans(operate, trans_opts)
             # print(operate, trans_opts)
         self.ImposeTrans()
+        # print(self.transMatrix)
 
     def ImposeTrans(self, pts=None):
         # 注意，这里的M和传统的M是转置关系，即位移变量在矩阵右侧而不是底侧
