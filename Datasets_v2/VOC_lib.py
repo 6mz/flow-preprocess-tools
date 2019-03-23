@@ -29,12 +29,16 @@ class Annotations(object):
 
 class ListMannager(object):
     def __init__(self):
+        '''
+        列表管理类
+        '''
         self.names = {}
 
     def NewList(self, name):
         self.names[name] = []
 
     def Add(self, name, item):
+        # 添加一项
         if name in self.names:
             self.names[name].append(item)
         else:
@@ -42,6 +46,7 @@ class ListMannager(object):
             self.names[name].append(item)
 
     def Adds(self, name, lists):
+        # 添加列表
         if name in self.names:
             self.names[name].extend(lists)
         else:
@@ -63,6 +68,7 @@ class ListMannager(object):
             print(f'WARRING:{name} not exist')
 
     def Merging(self, sub):
+        # 合并两个ListMannager对象，同名合并列表，不同名直接添加到dict中
         assert isinstance(sub, ListMannager)
         for name in sub.names:
             self.Adds(name, sub.names[name])
@@ -80,7 +86,7 @@ class ListMannager(object):
             self.names[name] = ReadList(fname)
 
     def QuickSave(self, path):
-        # 快速储存列表成txt到path下
+        # 快速储存列表成txt到path下，使用字典的key(names)直接当成文件名
         for list_name in self.names:
             fname = os.path.join(path, str(list_name)+'.txt')
             self.Save(list_name, fname)
@@ -96,12 +102,14 @@ class ListMannager(object):
             self.Open(b, full_name)
 
     def Len(self, name):
+        # 读取某个列表的长度
         if name in self.names:
             return len(self.names[name])
         else:
             return 0
 
     def Lens(self):
+        # 读取全部列表的长度总和
         tlen = 0
         for key in self.names:
             tlen += self.Len(key)

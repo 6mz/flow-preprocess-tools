@@ -81,6 +81,7 @@ class TransOptsManager(object):
         # 唯一的操作号：操作过程（可能包含函数，用于产生<操作结果>）
         self.operates_dict = {}
         self.operates_data = {}  # 唯一的操作号：操作结果（固定值，用于导入Trans）
+        self.operates_mode = {}
         self.c = count()
         self.mode = 'cover'
         #
@@ -88,11 +89,17 @@ class TransOptsManager(object):
         self.TRANS_OPTSLIST = GetTransOpts().keys()
 
     def SetMode(self, mode='modify'):
-        assert mode in ['cover', 'c', 'modify', 'm', 'const']
+        assert mode in [
+                'cover', 'c', 'modify1', 'm1', 'const', 'modifyn', 'mn']
+        # 在下一次Get时，会有如下变化：
+        # cover： 覆盖1次  modify1： 修改一次  modifyn: 一直修改直到被覆盖
+        # const： 不变
         if mode == 'c':
             mode = 'cover'
-        if mode == 'm':
-            mode = 'modify'
+        if mode == 'm1':
+            mode = 'modify1'
+        if mode == 'mn':
+            mode = 'modifyn'
         self.mode = mode
 
     def Set_(self, *lists):
@@ -117,6 +124,7 @@ class TransOptsManager(object):
         # 设置固定值
         if item in self.TRANS_OPTSLIST:
             # 添加变换
+            self.operates_mode[mark] = self.mode  # 给每个变换加单独的mode值
             if mark in self.operates_dict:
                 self.operates_dict[mark][item] = ['const', value]
             else:
@@ -129,6 +137,7 @@ class TransOptsManager(object):
 
     def SetRandom(self, item, fun, parameter, mark=None):
         # 设置随机函数
+        self.operates_mode[mark] = self.mode  # 给每个变换加单独的mode值
         if item in self.TRANS_OPTSLIST:
             # 添加变换
             if mark in self.operates_dict:
@@ -141,25 +150,27 @@ class TransOptsManager(object):
             print(f'WARRING: TransOptsManager.SetRandom:' +
                   f'{item} is not in the TRANS_TYPE or TransOpts')
 
-    def Modify(self, item, value, mark=None):
-        # 修改固定值
-        if item in self.TRANS_TYPE:
-            assert self.operates_dict[mark][item][0] == 'const'  # 类型检查
-            self.operates_dict[mark][item][1] += value
-        else:
-            print(f'WARRING: TransOptsManager.Modify:' +
-                  f'{item} is not the key of opts')
+#    def Modify(self, item, value, mark=None):
+#        # 修改固定值
+#        if item in self.TRANS_TYPE:
+#            assert self.operates_dict[mark][item][0] == 'const'  # 类型检查
+#            self.operates_dict[mark][item][1] += value
+#        else:
+#            print(f'WARRING: TransOptsManager.Modify:' +
+#                  f'{item} is not the key of opts')
 
     def Get(self):
         # 获取参数，随机函数在此时生效
         operates_dict = self.operates_dict  # 获取值产生器
         operates_data = self.operates_data
+        operates_mode = self.operates_mode
         operates = []
         operates_opts = []
         for mark in operates_dict:  # 对于对象的每个操作
             # 获得操作类型 和 参数
+            mode = operates_mode[mark]
             operate, trans_opts = operates_data[mark]
-            if(self.mode == 'cover'):  # 如果是覆盖模式,则重新生成新的 参数
+            if(mode == 'cover'):  # 如果是覆盖模式,则重新生成新的 参数
                 trans_opts = GetTransOpts()
             for item in operates_dict[mark]:  # 对于值产生器的每一个操作
                 sub_opt = operates_dict[mark][item]
@@ -171,29 +182,32 @@ class TransOptsManager(object):
                     parameter = sub_opt[2]
                     value = fun(*parameter)
                 if value is not None:  # 根据覆盖、调整、不变对原来的 参数 进行修改
-                    if(self.mode == 'cover'):
+                    if(mode == 'cover'):
                         trans_opts[item] = value
-                    elif(self.mode == 'modify'):
+                        operates_mode[mark] = 'const'  # 下次就不变了
+                    elif(mode == 'modify1'):
+                        trans_opts[item] += value
+                        operates_mode[mark] = 'const'  # 下次就不变了
+                    elif(mode == 'modifyn'):
                         trans_opts[item] += value
                     else:
                         pass
             operates.append(operate)
             operates_opts.append(trans_opts)
             operates_data[mark][1] = trans_opts  # 引用赋值，改变了变量
+        # print(operates_mode)
         return (operates, operates_opts)
 
-    def Copyfrom(self, other):
+    def Copyfrom(self, other):  # 《《《每次改动记得也来这里改一下哦》》》
         # 拷贝副本，但是保留本地的私人数据
         assert isinstance(other, TransOptsManager)
-        if other.mode == 'cover':
-            self.operates_dict = deepcopy(other.operates_dict)
-            self.operates_data = deepcopy(other.operates_data)
-        else:
-            # z = {**x, **y} y覆盖x
-            self.operates_dict = deepcopy(
-                    {**self.operates_dict, **other.operates_dict})
-            self.operates_data = deepcopy(
-                    {**other.operates_data, **self.operates_data})
+        # z = {**x, **y} y覆盖x
+        self.operates_mode = deepcopy(
+                {**self.operates_mode, **other.operates_mode})
+        self.operates_dict = deepcopy(
+                {**self.operates_dict, **other.operates_dict})
+        self.operates_data = deepcopy(
+                {**other.operates_data, **self.operates_data})
         self.c = other.c
         self.mode = other.mode
 
@@ -208,6 +222,7 @@ class MainBoard(object):
         self.opts = mainboard_opts
         self.objDict = {}
         self.transOptsDict = {}
+        self.transOptsDict_customize = {}
         # ======= func ========
         self.initBoard()
         self.initRandomImgGenerator()
@@ -343,6 +358,7 @@ class MainBoard(object):
         obj_back = Obj(back_data, back_datamask)
         self.objDict[numid] = obj_back
         self.transOptsDict[numid] = TransOptsManager()  # 私人变换数据
+        self.transOptsDict_customize[numid] = False
 
     def initBackground_check(self, backgroud, check=None):
         check = self.opts['background_check'] if check is None else check
@@ -399,12 +415,14 @@ class MainBoard(object):
         obj_froe = Obj(froe_data, froe_datamask)
         self.objDict[numid] = obj_froe
         self.transOptsDict[numid] = TransOptsManager()  # 私人变换数据
+        self.transOptsDict_customize[numid] = False
     # ==========================================
 
     def SetTransOptsDict(self, id_, transOM):
         assert id_ in ['back', 'fore'] or id_ in self.objDict
         if id_ in self.objDict:
             self.transOptsDict[id_] = transOM
+            self.transOptsDict_customize[id_] = True
         else:
             self.transOptsDict[id_] = transOM
 
@@ -413,21 +431,28 @@ class MainBoard(object):
         if id_ in self.objDict:  # 个人设置优先级高
             return self.transOptsDict[id_]
         elif id_ in ['back', 'fore']:
-            return self.transOptsDict[id_]
+            if id_ in self.transOptsDict:
+                return self.transOptsDict[id_]
+            else:
+                self.transOptsDict[id_] = TransOptsManager()
+                return self.transOptsDict[id_]
 
     # ==========================
     def TransAllOnce(self, nameDict):
         # 产生一次图
         # 对于背景
+        # <多背景需要对这里进行修改>
         back_transOM = self.GetTransOpts('back')
         obj_back = self.objDict[0]
         self.objDict[0] = TransSingalOnce(obj_back, self.board, back_transOM)
+        # </>
         for i in range(self.obj_num):
             # 对于所有的前景
-            fore_transOM = self.GetTransOpts('fore')
             obj_transOM = self.GetTransOpts(i+1)
-            # 从前景拷贝副本，但是保留自身的变换矩阵
-            obj_transOM.Copyfrom(fore_transOM)
+            if self.transOptsDict_customize[i+1] is False:
+                # 从前景拷贝副本，但是保留自身的变换矩阵
+                fore_transOM = self.GetTransOpts('fore')
+                obj_transOM.Copyfrom(fore_transOM)
             obj_fore = self.objDict[i+1]  # 0是背景
             obj_fore_ = TransSingalOnce(obj_fore, self.board, obj_transOM)
             self.objDict[i+1] = obj_fore_
@@ -459,7 +484,7 @@ def TransSingalOnce(obj, board, transOM):
 def Zoom(im, raw_size, target_size):
     zx, zy = np.array(target_size) / np.array(raw_size)
     z = max(zx, zy)
-    new_size = np.array((z*raw_size),dtype=np.int)
+    new_size = np.array((z*raw_size), dtype=np.int)
     res_im = im.resize(new_size)
     return res_im
 

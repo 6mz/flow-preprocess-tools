@@ -666,9 +666,9 @@ class Trans(object):
 
     def GenTrans_sf(self, Acorners, trans_opts):
         # 生成缩放变换
-        # print(trans_opts['sf'])
         sx = trans_opts['sf'][0]
         sy = trans_opts['sf'][1]
+        # print(sx,sy)
         # 缩放矩阵
         M = np.array([
                 [sx, 0, 0],

@@ -18,9 +18,11 @@ import datasets_func as func
 '''
 
 if platform.system() == 'Windows':
-    material_path = "E:/GitProgram/preprocess-tools/data/ds_v2_material"
+    win_material_path = "E:/GitProgram/preprocess-tools/data/ds_v2_material"
+    material_path = win_material_path
 elif platform.system() == 'Linux':
-    system = 'linux'
+    linux_material_path = '/4T_/liumz/ds_v2_material'
+    material_path = linux_material_path
 # ===================== set ===========================
 TYPE_LIST = {
         'foreground': ['voc'],
@@ -28,17 +30,17 @@ TYPE_LIST = {
         }
 
 DEFAULT_MATERIAL_VOC_OPTS = {
-        'path': os.path.join(material_path, "voc\\_Annotations"),
+        'path': os.path.join(material_path, "voc/_Annotations"),
         'level': {0: 0.2, 1: 0.25, 2: 0.25, 3: 0.2, 4: 0.1},
         }
 
 DEFAULT_BACKGROUND_BING_OPTS = {
         'path': os.path.join(material_path,
-                             "background\\bing-gallery-1366x768"),
+                             "background/bing-gallery-1366x768"),
         }
 
 DEFAULT_BACKGROUND_SKY_OPTS = {
-        'path': os.path.join(material_path, "background\\sky"),
+        'path': os.path.join(material_path, "background/sky"),
         }
 
 
@@ -116,6 +118,7 @@ class RandomImg(object):
 
 # 初始化区
     def init_voc(self):
+        # voc 的列表存在bug，在换平台时路径没有变化
         path = self.opts['path']
         assert os.path.exists(path)
         vocList, vocType, vocLevel = ReadVOCList(path)
@@ -153,38 +156,37 @@ class RandomImg(object):
         lvCatalogList = self.__vocLevel[randLv]
         lvItemList = self.list.Get(lvCatalogList)
         isexists = False
+        count = 0
         while not isexists:
             item = np.random.choice(lvItemList)
             imName, maName = item.split('+')
             isexists = os.path.exists(imName) & os.path.exists(maName)
+            count += 1
+            if count > 100:
+                print('请检查voc/_Annotations中的txt里的路径是否正确')
+                assert count <= 100
         img = Image.open(imName)
         mask = Image.open(maName)
         return (img, mask)  # 返回Image对象
 
     def RandomGet_bing(self):
         isexists = False
+        count = 0
         while not isexists:
             item = np.random.choice(self.list)
             isexists = os.path.exists(item)
+            count += 1
+            assert count <= 100
         img = Image.open(item)
         return img  # 返回Image对象(背景图只返回图片，没有mask)
 
     def RandomGet_sky(self):
         isexists = False
+        count = 0
         while not isexists:
             item = np.random.choice(self.list)
             isexists = os.path.exists(item)
+            count += 1
+            assert count <= 100
         img = Image.open(item)
         return img  # 返回Image对象(背景图只返回图片，没有mask)
-
-
-#def GetRandomBackground(opts):
-#    path = opts['background_path']
-#    materialList, materialType, materialLevel = ReadMaterialList(path)
-#    randLv = func.RandomLevel(level)
-#    lvCatalogList = materialLevel[randLv]
-#    lvItemList = materialList.Get(lvCatalogList)
-#    item = np.random.choice(lvItemList)
-#    img,mask = GetImgAndMask(item)
-#    return (img, mask)
-
