@@ -442,8 +442,6 @@ TRANS_TYPE = ['M', 'py', 'xz', 'sf', 'jq', 'ts']
 TRANS_TYPE_ENG = ['M', 'translation', 'rotation', 'scaling', 'shearing',
                   'perspective ']  # 预留用于标准化命名 <_<
 TRANS_TYPE_ENG_ABBR = ['M', 't', 'r', 'sc', 'sh', 'p']  # 预留用于标准化命名 >_>
-TRANS_TYPE_DICT = {  # 规定附加参数（和操作不同名的参数），其实没有用
-        'xz': ['xz_central', 'xz_central_local', 'xz_central_global']}
 
 DEFAULT_TRANS_OPTS = {
         # -------- M ---------
@@ -473,10 +471,6 @@ def GetTransOpts():
 
 def GetTransInfo():
     return (TRANS_TYPE, TRANS_TYPE_ENG, TRANS_TYPE_ENG_ABBR)
-
-
-def GetTransInfo2():
-    return (TRANS_TYPE, TRANS_TYPE_DICT)
 
 
 class Trans(object):

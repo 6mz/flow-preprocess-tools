@@ -22,7 +22,7 @@ DEFAULT_MAINBOARD_OPTS = {
         # ===============================
         'foreground_name': 'voc',
         'foreground_RandomImg_opts': None,  # None 表示自动根据foreground_name读取
-        # 前景物体的初始位置，auto表示全画幅随机，define表示自定义随机位置的参数,也可以通过做变换来随机
+        # 前景物体的初始位置，auto表示全画幅随机，define表示自定义随机位置的参数
         'foreground_iniPosMethod': 'auto',  # ['auto', 'define']
         # 前景物体初始位置的对齐点，central表示随机的是中心点，topleft表示左上角角点
         'foreground_iniPosStandard': 'central',  # ['central', 'topleft']
@@ -81,7 +81,7 @@ class TransOptsManager(object):
         # 唯一的操作号：操作过程（可能包含函数，用于产生<操作结果>）
         self.operates_dict = {}
         self.operates_data = {}  # 唯一的操作号：操作结果（固定值，用于导入Trans）
-        self.operates_mode = {}  # 见SetMode
+        self.operates_mode = {}
         self.c = count()
         self.mode = 'cover'
         #
@@ -122,8 +122,6 @@ class TransOptsManager(object):
 
     def SetValue(self, item, value=None, mark=None):
         # 设置固定值
-        # item 可以是操作（self.TRANS_TYPE），也可以是参数（self.TRANS_OPTSLIST）
-        # 这里TRANS_TYPE是TRANS_OPTSLIST的子集，所以直接判断TRANS_OPTSLIST
         if item in self.TRANS_OPTSLIST:
             # 添加变换
             self.operates_mode[mark] = self.mode  # 给每个变换加单独的mode值
@@ -174,8 +172,7 @@ class TransOptsManager(object):
             operate, trans_opts = operates_data[mark]
             if(mode == 'cover'):  # 如果是覆盖模式,则重新生成新的 参数
                 trans_opts = GetTransOpts()
-            # 对于每一个变换操作做循环，大部分变换由于只有一个参数其实都只循环了一次
-            for item in operates_dict[mark]:
+            for item in operates_dict[mark]:  # 对于值产生器的每一个操作
                 sub_opt = operates_dict[mark][item]
                 types = sub_opt[0]  # 值产生器类型，固定值或函数
                 if types is 'const':
@@ -307,7 +304,7 @@ class MainBoard(object):
                 new_size = np.array(background.size)
                 if not (new_size >= tag_size).all():
                     continue  # 以防万一
-                cen_pos = (new_size - tag_size)/2
+                cen_pos = new_size - tag_size
                 box = (cen_pos[0], cen_pos[1],
                        cen_pos[0] + tag_size[0],
                        cen_pos[1] + tag_size[1])
@@ -422,7 +419,6 @@ class MainBoard(object):
     # ==========================================
 
     def SetTransOptsDict(self, id_, transOM):
-        assert isinstance(transOM, TransOptsManager)
         assert id_ in ['back', 'fore'] or id_ in self.objDict
         if id_ in self.objDict:
             self.transOptsDict[id_] = transOM
