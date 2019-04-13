@@ -772,10 +772,13 @@ class Board(object):
         self.imB = Obj(background, backgroundMask)
         self.flowA = Obj(backgroundFlow, backgroundMask)
         self.flowB = Obj(backgroundFlow, backgroundMask)
+        self.backM = np.eye(3, dtype=np.float)
 
-    def addTrans(self, trans):
+    def addTrans(self, trans, trans_type='fore'):
         assert(isinstance(trans, Trans))
         self.TransLists.append(trans)
+        if trans_type == 'back':
+            self.backM = trans.transMatrix
 
     def Gen(self):
         for trans in self.TransLists:
@@ -809,5 +812,7 @@ class Board(object):
 #            im = Image.fromarray(imArray)
             im = Image.fromarray(func.viz_flow_color(self.flowB.rectData))
             im.save(dicts['flowBA_viz'])
+        if 'backM' in dicts:
+            np.savetxt(dicts['backM'], self.backM)
 
 ###################################################################

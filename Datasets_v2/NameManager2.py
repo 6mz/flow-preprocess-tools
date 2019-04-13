@@ -40,7 +40,7 @@ class NameManager2(object):
         # 判断操作合法性
         assert set(name_opts['operation']).issubset(
                 set(['imA', 'imB', 'flowAB', 'flowBA',
-                     'flowAB_viz', 'flowBA_viz']))
+                     'flowAB_viz', 'flowBA_viz', 'backM']))
         # 判断长度一致性
         assert not name_opts['prefix'] or len(name_opts['prefix']) == gn
         assert not name_opts['suffix'] or len(name_opts['suffix']) == gn

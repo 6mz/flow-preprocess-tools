@@ -225,7 +225,7 @@ class MainBoard(object):
         self.opts = mainboard_opts
         self.objDict = {}
         self.transOptsDict = {}
-        self.transOptsDict_customize = {}
+        self.transOptsDict_customize = {}  # 布尔值
         # ======= func ========
         self.initBoard()
         self.initRandomImgGenerator()
@@ -448,7 +448,8 @@ class MainBoard(object):
         # <多背景需要对这里进行修改>
         back_transOM = self.GetTransOpts('back')
         obj_back = self.objDict[0]
-        self.objDict[0] = TransSingalOnce(obj_back, self.board, back_transOM)
+        self.objDict[0] = TransSingalOnce(
+                obj_back, self.board, back_transOM, trans_type='back')
         # </>
         for i in range(self.obj_num):
             # 对于所有的前景
@@ -475,13 +476,13 @@ class MainBoard(object):
 #        return a
 
 
-def TransSingalOnce(obj, board, transOM):
+def TransSingalOnce(obj, board, transOM, trans_type='fore'):
     # 对一个obj变换一次
     assert isinstance(transOM, TransOptsManager)
     trans = Trans(obj)
     operates, operates_opts = transOM.Get()
     trans.QuickTrans(operates, operates_opts)  # 引用传参
-    board.addTrans(trans)
+    board.addTrans(trans, trans_type)
     return trans.obj_imB
 
 

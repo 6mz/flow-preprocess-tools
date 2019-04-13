@@ -48,6 +48,7 @@ class Aim_3(object):
         func.SaveList(fname, nameList)
 
     def GenNameOpts(self, outitems, outdirform):
+        # 自动生成各个输出项目的文件名
         operation = []
         sdir = []
         suffix = []
@@ -59,6 +60,7 @@ class Aim_3(object):
             sdir.append(GenSdir(pic_id, 'im', outdirform))
             suffix.append(GenSuffix(pic_id, 'im'))
             ext.append(GenExt('im'))
+        # 1,2; 对齐1
         for pic_id in range(1, 3):
             for outitem in outitems:
                 if outitem == 'flow':
@@ -111,6 +113,8 @@ class Sequence(object):
         name_opts['ext'] = ext
         self.nameManager = NameManager2(iter_num, name_opts)
         self.step = len(outitems)
+        self.nameList = []
+        self.path = path
 
     def NameManager2(self):
         return self.nameManager
@@ -121,6 +125,7 @@ class Sequence(object):
 
     def __next__(self):
         name_dict_list = next(self.nameManager)  # error 信号由nameManager发出
+        self.nameList.append(name_dict_list)
         s = Step(name_dict_list, self.step)
         return s
 
@@ -135,6 +140,7 @@ class Sequence(object):
             sdir.append(GenSdir(0, 'im', outdirform))
             suffix.append(GenSuffix(0, 'im'))
             ext.append(GenExt('im'))
+        # 1-N
         for pic_id in range(1, sequence_num):
             for outitem in outitems:
                 operation.append(GenOperation(outitem))
@@ -143,7 +149,112 @@ class Sequence(object):
                 ext.append(GenExt(outitem))
         return operation, sdir, suffix, ext
 
+    def SaveList(self, fname=None):
+        if fname is None:
+            fname = os.path.join(self.path, 'file_list.txt')
+        nameList = self.ArrangeNameList()
+        func.SaveList(fname, nameList)
 
+    def ArrangeNameList(self):
+        nameList = self.nameList
+        res_list = []
+        for item in nameList:
+            item_pic = []
+            item_flow = []
+            for n,p in item:
+                if n == 'imB':
+                    p_ = os.path.realpath(os.path.normpath(p))
+                    item_pic.append(p_)
+                elif n == 'flowAB' or n == 'flowBA':
+                    p_ = os.path.realpath(os.path.normpath(p))
+                    item_flow.append(p_)
+            res_list.append(' '.join(item_pic + item_flow))
+        return res_list
+
+
+class DeepHomo_2(object):
+    '''
+    NameManager2的管理类，对其进行了特化设置，用于更加方便的一键生成任意长的 
+    <普通序列> 
+    '''
+    def __init__(
+            self, iter_num, path,
+            outitems=['im', 'fAB', 'vAB', 'M'],
+            outdirform='together'
+            ):
+        assert outdirform in ['together', 'split']
+        assert set(outitems).issubset(
+                set(['im', 'fAB', 'fBA', 'vAB', 'vBA', 'M']))
+        assert 1 <= iter_num
+        res = self.GenNameOpts(outitems, outdirform)
+        operation, sdir, suffix, ext = res
+        name_opts = GetNameOpts()
+        name_opts['target'] = path
+        name_opts['operation'] = operation
+        name_opts['sdir'] = sdir
+        name_opts['suffix'] = suffix
+        name_opts['ext'] = ext
+        self.nameManager = NameManager2(iter_num, name_opts)
+        self.step = len(outitems)
+        self.nameList = []
+        self.path = path
+
+    def NameManager2(self):
+        return self.nameManager
+
+    def __iter__(self):
+        self.nameManager.__iter__()
+        return self
+
+    def __next__(self):
+        name_dict_list = next(self.nameManager)  # error 信号由nameManager发出
+        self.nameList.append(name_dict_list)
+        s = Step(name_dict_list, self.step)
+        return s
+
+    def GenNameOpts(self, outitems, outdirform):
+        operation = []
+        sdir = []
+        suffix = []
+        ext = []
+        # 0
+        if 'im' in outitems:
+            operation.append('imB')
+            sdir.append(GenSdir(0, 'im', outdirform))
+            suffix.append(GenSuffix(0, 'im'))
+            ext.append(GenExt('im'))
+        # 1
+        for pic_id in range(1, 2):
+            for outitem in outitems:
+                operation.append(GenOperation(outitem))
+                sdir.append(GenSdir(pic_id, outitem, outdirform))
+                suffix.append(GenSuffix(pic_id, outitem))
+                ext.append(GenExt(outitem))
+        return operation, sdir, suffix, ext
+
+    def SaveList(self, fname=None):
+        if fname is None:
+            fname = os.path.join(self.path, 'file_list.txt')
+        nameList = self.ArrangeNameList()
+        func.SaveList(fname, nameList)
+
+    def ArrangeNameList(self):
+        nameList = self.nameList
+        res_list = []
+        for item in nameList:
+            item_pic = []
+            item_flow = []
+            for n,p in item:
+                if n == 'imB':
+                    p_ = os.path.realpath(os.path.normpath(p))
+                    item_pic.append(p_)
+                elif n == 'flowAB' or n == 'flowBA':
+                    p_ = os.path.realpath(os.path.normpath(p))
+                    item_flow.append(p_)
+            res_list.append(' '.join(item_pic + item_flow))
+        return res_list
+
+# =========================  func  ==============================
 class Step(object):
     def __init__(self, name_dict_list, step):
         self.name_dict_list = name_dict_list
@@ -167,7 +278,8 @@ class Step(object):
 
 
 def GenOperation(outitem):
-    if outitem == 'im':
+    # 返回Board类的Save函数中的操作
+    if outitem == 'im':  # 序列操作imA就是上一帧的imB，因此im默认为imB
         return 'imB'
     elif outitem == 'fAB':
         return 'flowAB'
@@ -177,9 +289,13 @@ def GenOperation(outitem):
         return 'flowAB_viz'
     elif outitem == 'vBA':
         return 'flowBA_viz'
+    elif outitem == 'M':
+        return 'backM'
 
 
 def GenSdir(sequence_id, outitem, outdirform):
+    # 返回子文件夹名称
+    # sequence_id：序号， outitem：项目， outdirform：输出类型
     sequence_strid = column_to_name(sequence_id)
     if outitem == 'im':
         sdir_candidate = ['show', sequence_strid]
@@ -187,19 +303,24 @@ def GenSdir(sequence_id, outitem, outdirform):
         sdir_candidate = ['flow', 'flow']
     elif outitem == 'vAB' or outitem == 'vBA':
         sdir_candidate = ['show', 'viz_flow']
+    elif outitem == 'M':
+        sdir_candidate = ['M', 'M']
+    # 根据输出类型二选一(独立文件夹或同一个文件夹)
     return sdir_candidate[outdirform == 'split']
 
 
-def GenExt(outitem):
+def GenExt(outitem):  # 返回扩展名
     if outitem == 'im':
         return 'png'
     elif outitem == 'fAB' or outitem == 'fBA':
         return 'flo'
     elif outitem == 'vAB' or outitem == 'vBA':
         return 'jpg'
+    elif outitem == 'M':
+        return 'npy'
 
 
-def GenSuffix(sequence_id, outitem):
+def GenSuffix(sequence_id, outitem):  # 返回名称后缀部分
     sequence_strid_b = column_to_name(sequence_id)
     sequence_strid_a = column_to_name(sequence_id - 1)
     if outitem == 'im':
@@ -212,9 +333,11 @@ def GenSuffix(sequence_id, outitem):
         return 'viz_gt' + sequence_strid_a + sequence_strid_b
     elif outitem == 'vBA':
         return 'viz_gt' + sequence_strid_b + sequence_strid_a
+    elif outitem == 'M':
+        return 'M' + sequence_strid_a + sequence_strid_b
 
 
-def column_to_name(colnum):
+def column_to_name(colnum):  # excel的列风格的命名法
     # 0->A 26->AA
     if type(colnum) is not int:
         return colnum
