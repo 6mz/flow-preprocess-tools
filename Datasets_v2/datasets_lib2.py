@@ -464,6 +464,7 @@ class MainBoard(object):
             self.objDict[i+1] = obj_fore_
         self.board.Gen()
         self.board.Save(nameDict)
+        return self.board.backCompCover
 
 
 #def DeepCopytransOM(other):

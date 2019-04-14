@@ -26,6 +26,7 @@ class Aim_3(object):
         self.nameManager = NameManager2(iter_num, name_opts)
         self.step = len(outitems)
         self.nameList = []
+        self.uncoverList = []
         self.path = path
 
     def NameManager2(self):
@@ -40,12 +41,6 @@ class Aim_3(object):
         self.nameList.append(name_dict_list)
         s = Step(name_dict_list, self.step)
         return s
-
-    def SaveList(self, fname=None):
-        if fname is None:
-            fname = os.path.join(self.path, 'file_list.txt')
-        nameList = self.ArrangeNameList()
-        func.SaveList(fname, nameList)
 
     def GenNameOpts(self, outitems, outdirform):
         # 自动生成各个输出项目的文件名
@@ -73,12 +68,21 @@ class Aim_3(object):
                 ext.append(GenExt(outitem))
         return operation, sdir, suffix, ext
 
+    def SaveList(self, fname=None):
+        if fname is None:
+            fname = os.path.join(self.path, 'file_list.txt')
+        nameList = self.ArrangeNameList()
+        uncoverList = self.ArrangeUncoverList()
+        func.SaveList(fname, nameList)
+        func.SaveList(os.path.join(self.path, 'uncover.txt'), uncoverList)
+
     def ArrangeNameList(self):
         nameList = self.nameList
         res_list = []
         for item in nameList:
             item_pic = []
             item_flow = []
+            item_m = []
             for n,p in item:
                 if n == 'imB':
                     p_ = os.path.realpath(os.path.normpath(p))
@@ -86,8 +90,17 @@ class Aim_3(object):
                 elif n == 'flowAB' or n == 'flowBA':
                     p_ = os.path.realpath(os.path.normpath(p))
                     item_flow.append(p_)
-            res_list.append(' '.join(item_pic + item_flow))
+                elif n == 'backMAB' or n== 'backMBA':
+                    p_ = os.path.realpath(os.path.normpath(p))
+                    item_m.append(p_)
+            res_list.append(' '.join(item_pic + item_flow + item_m))
         return res_list
+
+    def AddUncover(self,ids):
+        self.uncoverList.append(ids)
+
+    def ArrangeUncoverList(self):
+        return list(set(self.uncoverList))
 
 
 class Sequence(object):
@@ -114,6 +127,7 @@ class Sequence(object):
         self.nameManager = NameManager2(iter_num, name_opts)
         self.step = len(outitems)
         self.nameList = []
+        self.uncoverList = []
         self.path = path
 
     def NameManager2(self):
@@ -153,7 +167,9 @@ class Sequence(object):
         if fname is None:
             fname = os.path.join(self.path, 'file_list.txt')
         nameList = self.ArrangeNameList()
+        uncoverList = self.ArrangeUncoverList()
         func.SaveList(fname, nameList)
+        func.SaveList(os.path.join(self.path, 'uncover.txt'), uncoverList)
 
     def ArrangeNameList(self):
         nameList = self.nameList
@@ -161,6 +177,7 @@ class Sequence(object):
         for item in nameList:
             item_pic = []
             item_flow = []
+            item_m = []
             for n,p in item:
                 if n == 'imB':
                     p_ = os.path.realpath(os.path.normpath(p))
@@ -168,8 +185,17 @@ class Sequence(object):
                 elif n == 'flowAB' or n == 'flowBA':
                     p_ = os.path.realpath(os.path.normpath(p))
                     item_flow.append(p_)
-            res_list.append(' '.join(item_pic + item_flow))
+                elif n == 'backMAB' or n== 'backMBA':
+                    p_ = os.path.realpath(os.path.normpath(p))
+                    item_m.append(p_)
+            res_list.append(' '.join(item_pic + item_flow + item_m))
         return res_list
+
+    def AddUncover(self,ids):
+        self.uncoverList.append(ids)
+
+    def ArrangeUncoverList(self):
+        return list(set(self.uncoverList))
 
 
 class DeepHomo_2(object):
@@ -197,6 +223,7 @@ class DeepHomo_2(object):
         self.nameManager = NameManager2(iter_num, name_opts)
         self.step = len(outitems)
         self.nameList = []
+        self.uncoverList = []
         self.path = path
 
     def NameManager2(self):
@@ -236,7 +263,9 @@ class DeepHomo_2(object):
         if fname is None:
             fname = os.path.join(self.path, 'file_list.txt')
         nameList = self.ArrangeNameList()
+        uncoverList = self.ArrangeUncoverList()
         func.SaveList(fname, nameList)
+        func.SaveList(os.path.join(self.path, 'uncover.txt'), uncoverList)
 
     def ArrangeNameList(self):
         nameList = self.nameList
@@ -257,6 +286,13 @@ class DeepHomo_2(object):
                     item_m.append(p_)
             res_list.append(' '.join(item_pic + item_flow + item_m))
         return res_list
+
+    def AddUncover(self,ids):
+        self.uncoverList.append(ids)
+
+    def ArrangeUncoverList(self):
+        return list(set(self.uncoverList))
+
 
 # =========================  func  ==============================
 class Step(object):

@@ -30,6 +30,7 @@ if __name__ == '__main__':
             )
     for i, nameDict_iter in enumerate(deepHomo_2):
         mainBoard = MainBoard(obj_num, mainboard_opts)
+        iscover = True
         for j, nameDict in enumerate(nameDict_iter):
             if(j == 0):
 #                back_transOM = TransOptsManager()
@@ -41,8 +42,7 @@ if __name__ == '__main__':
                 mainBoard.TransAllOnce(nameDict)
             elif(j == 1):
                 back_transOM = TransOptsManager()
-                #back_transOM.Set_('xz', func.RandomAngle, (-1, 1, 'd'))
-                back_transOM.Set_('xz', np.pi/4)
+                back_transOM.Set_('xz', func.RandomAngle, (-1, 1, 'd'))
                 #back_transOM.Set_('py', func.RandomDis, ((-5, -5), (5, 5)))
                 #back_transOM.Set_('sf', func.RandomScale,
                 #                  ((0.98, 0.98), (1.02, 1.02)))
@@ -56,7 +56,7 @@ if __name__ == '__main__':
                                   ((0.95, 0.95), (1.05, 1.05)))
                 mainBoard.SetTransOptsDict('back', back_transOM)
                 mainBoard.SetTransOptsDict('fore', fore_transOM)
-                mainBoard.TransAllOnce(nameDict)
+                iscover = mainBoard.TransAllOnce(nameDict)
             else:
                 back_transOM = mainBoard.GetTransOpts('back')
                 back_transOM.SetMode('mn')
@@ -70,7 +70,9 @@ if __name__ == '__main__':
                 fore_transOM.Set_('py', func.NormalDis, (0, 2))
                 mainBoard.SetTransOptsDict('back', back_transOM)
                 mainBoard.SetTransOptsDict('fore', fore_transOM)
-                mainBoard.TransAllOnce(nameDict)
+                iscover = mainBoard.TransAllOnce(nameDict)
+        if not iscover:
+            deepHomo_2.AddUncover(i)
         print(f'完成:{i+1}/{iter_num}')
     deepHomo_2.SaveList()
     print('全部完成!')

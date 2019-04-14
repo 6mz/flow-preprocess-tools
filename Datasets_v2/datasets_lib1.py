@@ -788,12 +788,14 @@ class Board(object):
         self.flowA = Obj(backgroundFlow, backgroundMask)
         self.flowB = Obj(backgroundFlow, backgroundMask)
         self.backM = np.eye(3, dtype=np.float)
+        self.backCompCover = True
 
     def addTrans(self, trans, trans_type='fore'):
         assert(isinstance(trans, Trans))
         self.TransLists.append(trans)
         if trans_type == 'back':
             self.GenBackM(trans)
+            self.CheckBack(trans)
 
     def GenBackM(self, trans):
         '''
@@ -808,8 +810,38 @@ class Board(object):
                 [0, 1, y],
                 [0, 0, 1],
                 ])
-        self.backMAB =  np.matmul(np.linalg.inv(M_shift),np.matmul(M, M_shift))
+        self.backMAB = np.matmul(
+                np.linalg.inv(M_shift), np.matmul(M, M_shift))
         self.backMBA = np.linalg.inv(self.backMAB)
+
+    def CheckBack(self, trans):
+        # 检查背景obj是否完全覆盖board
+        board_rect_A = self.boardRect
+        back_obj_rect_A = trans.obj_imA.rect
+        board_rect_B = self.boardRect
+        back_obj_rect_B = trans.obj_imB.rect
+        if (board_rect_A != board_rect_A & back_obj_rect_A or
+                board_rect_B != board_rect_B & back_obj_rect_B):
+            if(DEBUG):
+                print('WARRING: Board.CheckBack: ' +
+                      'back_obj does not completely cover Board！')
+            self.backCompCover = False
+            return
+        back_mask_A = trans.obj_imA.rectDataMask
+        x, y = board_rect_A.rectPosPoint - back_obj_rect_A.rectPosPoint
+        sx, sy = board_rect_A.rectSize
+        a = back_mask_A[int(y):int(y+sy), int(x):int(x+sx)].all()
+        back_mask_B = trans.obj_imB.rectDataMask
+        x, y = board_rect_B.rectPosPoint - back_obj_rect_B.rectPosPoint
+        sx, sy = board_rect_B.rectSize
+        b = back_mask_B[int(y):int(y+sy), int(x):int(x+sx)].all()
+        if a and b:
+            self.backCompCover = True
+        else:
+            if(DEBUG):
+                print('WARRING: Board.CheckBack: ' +
+                      'back_obj does not completely cover Board！！')
+            self.backCompCover = False
 
     def Gen(self):
         for trans in self.TransLists:
