@@ -175,16 +175,16 @@ class Sequence(object):
 class DeepHomo_2(object):
     '''
     NameManager2的管理类，对其进行了特化设置，用于更加方便的一键生成任意长的 
-    <普通序列> 
+    <???????> 
     '''
     def __init__(
             self, iter_num, path,
-            outitems=['im', 'fAB', 'vAB', 'M'],
+            outitems=['im', 'fAB', 'vAB', 'mAB'],
             outdirform='together'
             ):
         assert outdirform in ['together', 'split']
         assert set(outitems).issubset(
-                set(['im', 'fAB', 'fBA', 'vAB', 'vBA', 'M']))
+                set(['im', 'fAB', 'fBA', 'vAB', 'vBA', 'mAB', 'mBA']))
         assert 1 <= iter_num
         res = self.GenNameOpts(outitems, outdirform)
         operation, sdir, suffix, ext = res
@@ -244,6 +244,7 @@ class DeepHomo_2(object):
         for item in nameList:
             item_pic = []
             item_flow = []
+            item_m = []
             for n,p in item:
                 if n == 'imB':
                     p_ = os.path.realpath(os.path.normpath(p))
@@ -251,7 +252,10 @@ class DeepHomo_2(object):
                 elif n == 'flowAB' or n == 'flowBA':
                     p_ = os.path.realpath(os.path.normpath(p))
                     item_flow.append(p_)
-            res_list.append(' '.join(item_pic + item_flow))
+                elif n == 'backMAB' or n== 'backMBA':
+                    p_ = os.path.realpath(os.path.normpath(p))
+                    item_m.append(p_)
+            res_list.append(' '.join(item_pic + item_flow + item_m))
         return res_list
 
 # =========================  func  ==============================
@@ -276,6 +280,12 @@ class Step(object):
             self.count += self.step
             return dict(self.name_dict_list[count:self.count])
 
+# ================================
+# 添加新项目请更改下面3个函数
+# 上面的类中的__init__、ArrangeNameList函数
+# 以及NameManager2的check函数
+# 还有lib1的Board类的save函数
+# ================================
 
 def GenOperation(outitem):
     # 返回Board类的Save函数中的操作
@@ -289,9 +299,10 @@ def GenOperation(outitem):
         return 'flowAB_viz'
     elif outitem == 'vBA':
         return 'flowBA_viz'
-    elif outitem == 'M':
-        return 'backM'
-
+    elif outitem == 'mAB':
+        return 'backMAB'
+    elif outitem == 'mBA':
+        return 'backMBA'
 
 def GenSdir(sequence_id, outitem, outdirform):
     # 返回子文件夹名称
@@ -303,7 +314,7 @@ def GenSdir(sequence_id, outitem, outdirform):
         sdir_candidate = ['flow', 'flow']
     elif outitem == 'vAB' or outitem == 'vBA':
         sdir_candidate = ['show', 'viz_flow']
-    elif outitem == 'M':
+    elif outitem == 'mAB' or outitem == 'mBA':
         sdir_candidate = ['M', 'M']
     # 根据输出类型二选一(独立文件夹或同一个文件夹)
     return sdir_candidate[outdirform == 'split']
@@ -316,7 +327,7 @@ def GenExt(outitem):  # 返回扩展名
         return 'flo'
     elif outitem == 'vAB' or outitem == 'vBA':
         return 'jpg'
-    elif outitem == 'M':
+    elif outitem == 'mAB' or outitem == 'mBA':
         return 'npy'
 
 
@@ -333,8 +344,10 @@ def GenSuffix(sequence_id, outitem):  # 返回名称后缀部分
         return 'viz_gt' + sequence_strid_a + sequence_strid_b
     elif outitem == 'vBA':
         return 'viz_gt' + sequence_strid_b + sequence_strid_a
-    elif outitem == 'M':
+    elif outitem == 'mAB':
         return 'M' + sequence_strid_a + sequence_strid_b
+    elif outitem == 'mBA':
+        return 'M' + sequence_strid_b + sequence_strid_a
 
 
 def column_to_name(colnum):  # excel的列风格的命名法

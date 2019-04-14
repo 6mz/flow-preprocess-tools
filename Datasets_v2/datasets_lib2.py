@@ -446,6 +446,7 @@ class MainBoard(object):
         # 产生一次图
         # 对于背景
         # <多背景需要对这里进行修改>
+        self.initBoard()
         back_transOM = self.GetTransOpts('back')
         obj_back = self.objDict[0]
         self.objDict[0] = TransSingalOnce(

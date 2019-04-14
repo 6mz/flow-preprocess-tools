@@ -504,11 +504,11 @@ class Trans(object):
     def QuickTrans(self, operates=['M'], operates_opts=[DEFAULT_TRANS_OPTS]):
         # 组合了GenTrans和ImposeTrans达到一键生成的目的
         # operates, operates_opts 都是列表,长度相等；
-        # 或是operates_opts的长度为1，则自动进行广播
+        # 或是operates_opts的长度为1，说明是共用的，则自动进行广播
         len1 = len(operates)
         len2 = len(operates_opts)
         assert len1 == len2 or len2 == 1
-        if len2 == 1:
+        if len2 == 1:  # 如果只有一个参数说明是共用的，复制多份
             operates_opts = operates_opts*len1
         for operate, trans_opts in zip(operates, operates_opts):
             self.GenTrans(operate, trans_opts)
@@ -517,14 +517,28 @@ class Trans(object):
         # print(self.transMatrix)
 
     def ImposeTrans(self, pts=None):
-        # 注意，这里的M和传统的M是转置关系，即位移变量在矩阵右侧而不是底侧
-        # pts是一个列表，内含2组四元点对，如果不是None就使用pts产生变换矩阵M
+        '''
+        用于基于点对产生变换矩阵M后生成对应的图像和光流，
+        调用了TransData、GenFlowAB、GenFlowAB三个子函数
+        点对来自于多次调用GenTrans函数。
+
+        注意，这里的M和传统的M是转置关系，即位移变量在矩阵右侧而不是底侧:
+                  本程序     数图处理课本
+                 [1 0 x]     [1 0 0]
+                 [0 1 y]     [0 1 0]
+                 [0 0 1]     [x y 1]
+
+        pts是一个列表，内含2组四元点对，
+        如果不是None就使用pts产生变换矩阵M而不是GenTrans产生的点对
+        '''
         if pts is None:
             Acorners = self.Acorners
             Bcorners = self.Bcorners
         else:
             Acorners = pts[0]
             Bcorners = pts[1]
+            self.Acorners = Acorners
+            self.Bcorners = Bcorners
         M = cv2.getPerspectiveTransform(Acorners, Bcorners)
         rectA = self.BorderRect(Acorners)
         rectA.Move(self.obj_imA.rect.rectPosPoint)  # 局部坐标修正回全局坐标
@@ -540,6 +554,7 @@ class Trans(object):
 #        print(self.Bcorners)
 #        print(rectA, rectB)
         self.transMatrix = M
+        self.M_shift = M_shift
         self.Bshift = shift
         self.TransData(M, M_shift, rectA, rectB)
         self.GenFlowAB(M, rectA)
@@ -729,7 +744,7 @@ class Trans(object):
         return xz_point
 
     def PointsTrans(self, Acorners, M):
-        # 基于变换矩阵M对四点进行变换
+        # 基于变换矩阵M对四点进行变换产生变换后的四点对
         xs = Acorners[:, 0]
         ys = Acorners[:, 1]
         zs = np.ones_like(xs)
@@ -741,7 +756,7 @@ class Trans(object):
         return Bcorners
 
     def BorderRect(self, pts):
-        # 找到四点的外框矩阵
+        # 找到四点的外框矩阵（外接矩阵）
         assert len(pts) == 4
         minx = 999999
         maxx = -999999
@@ -762,8 +777,8 @@ class Trans(object):
 
 class Board(object):
     def __init__(self, size):
+        # 画板
         self.TransLists = []
-        # levellists
         self.boardRect = Rect(Point(0, 0), size)
         background = RectArray(self.boardRect, dtype=np.uint8)
         backgroundFlow = RectArray(self.boardRect, 2, dtype=np.float)
@@ -778,7 +793,23 @@ class Board(object):
         assert(isinstance(trans, Trans))
         self.TransLists.append(trans)
         if trans_type == 'back':
-            self.backM = trans.transMatrix
+            self.GenBackM(trans)
+
+    def GenBackM(self, trans):
+        '''
+        保存背景的变换矩阵，由于背景的变换矩阵的原点不是全局坐标原点
+        （背景obj略大于boradsize），故还需要修正
+        '''
+        M = trans.transMatrix
+        shift = Point(0, 0) - trans.obj_imA.rect.rectPosPoint
+        x, y = shift
+        M_shift = np.array([
+                [1, 0, x],
+                [0, 1, y],
+                [0, 0, 1],
+                ])
+        self.backMAB =  np.matmul(np.linalg.inv(M_shift),np.matmul(M, M_shift))
+        self.backMBA = np.linalg.inv(self.backMAB)
 
     def Gen(self):
         for trans in self.TransLists:
@@ -812,7 +843,8 @@ class Board(object):
 #            im = Image.fromarray(imArray)
             im = Image.fromarray(func.viz_flow_color(self.flowB.rectData))
             im.save(dicts['flowBA_viz'])
-        if 'backM' in dicts:
-            np.savetxt(dicts['backM'], self.backM)
-
+        if 'backMAB' in dicts:
+            np.save(dicts['backMAB'], self.backMAB)
+        if 'backMBA' in dicts:
+            np.save(dicts['backMBA'], self.backMBA)
 ###################################################################
